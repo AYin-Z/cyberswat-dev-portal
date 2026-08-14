@@ -1,0 +1,17 @@
+{
+  "name": "cyberswat-dev-portal",
+  "private": true,
+  "version": "0.1.0",
+  "description": "CyberSWAT 开发部子站系统 — 插件化架构 monorepo",
+  "type": "module",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @cyberswat/dev-api dev",
+    "dev:web": "pnpm --filter @cyberswat/dev-web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  }
+}

@@ -1,0 +1,80 @@
+// CyberSWAT 开发部子站 — 核心数据模型（L0 设计稿，M1 接 PostgreSQL 后 migrate）
+// 命名空间规范：core_ 前缀 = 内核表；能力包表用各自 dbNamespace 前缀（如 idea_wall_）
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ 内核模型（core_） ============
+
+model CoreUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  nickname     String
+  realName     String?
+  teamInfo     String? // 区队/学号 — 公安院校隐私红线，仅内部
+  grade        String? // 年级，如 "2026"
+  skills       String[] @default([])
+  bio          String?
+  avatarUrl    String?
+  github       String? // GitHub OAuth 绑定后同步
+  links        Json     @default("[]") // [{label, url}] 外链区
+  role         CoreRole @default(MEMBER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("core_users")
+}
+
+enum CoreRole {
+  GUEST
+  MEMBER
+  DEPT_LEADER
+  ADMIN
+}
+
+/// 角色 → 权限点映射（L1 落库后管理员可调整；L0 在内存按 defaultRoles 计算）
+model CoreRolePermission {
+  id         String @id @default(uuid())
+  role       CoreRole
+  permission String // 权限点 id，如 idea.promote
+  grantedBy  String? // 管理员 id（审计）
+  createdAt  DateTime @default(now())
+
+  @@unique([role, permission])
+  @@map("core_role_permissions")
+}
+
+/// 工具调用审计 — 公安院校审计铁律
+model CoreToolCall {
+  id         String   @id @default(uuid())
+  toolId     String
+  caller     String // 用户 id 或 bot:<agent-id>
+  agentId    String?
+  params     Json
+  result     Json?
+  status     String   @default("ok") // ok | error | pending | rejected
+  approvedBy String?
+  createdAt  DateTime @default(now())
+
+  @@index([toolId, createdAt])
+  @@map("core_tool_calls")
+}
+
+/// 插件状态（L1 配置驱动启停用；L0 编译期注册，无行）
+model CorePlugin {
+  id        String   @id
+  version   String
+  enabled   Boolean  @default(true)
+  config    Json?
+  createdAt DateTime @default(now())
+
+  @@map("core_plugins")
+}
