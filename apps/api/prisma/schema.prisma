@@ -1,5 +1,5 @@
-// CyberSWAT 开发部子站 — 核心数据模型（L0 设计稿，M1 接 PostgreSQL 后 migrate）
-// 命名空间规范：core_ 前缀 = 内核表；能力包表用各自 dbNamespace 前缀（如 idea_wall_）
+// CyberSWAT 开发部子站 — 核心数据模型
+// 命名空间规范：core_ 前缀 = 内核表；能力包表用各自 dbNamespace 前缀（如 announcement_）
 
 generator client {
   provider = "prisma-client-js"
@@ -23,12 +23,18 @@ model CoreUser {
   skills       String[] @default([])
   bio          String?
   avatarUrl    String?
-  github       String? // GitHub OAuth 绑定后同步
+  github       String? // GitHub 用户名（OAuth 绑定后同步）
   links        Json     @default("[]") // [{label, url}] 外链区
   role         CoreRole @default(MEMBER)
   active       Boolean  @default(true)
+  // GitHub OAuth 绑定
+  githubId     String?  @unique
+  githubToken  String? // OAuth access token（加密存储，M1+）
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  announcements   Announcement[] @relation("AnnouncementAuthor")
+  announcementReads AnnouncementRead[]
 
   @@map("core_users")
 }
@@ -77,4 +83,36 @@ model CorePlugin {
   createdAt DateTime @default(now())
 
   @@map("core_plugins")
+}
+
+// ============ 公告能力包（announcement_，dbNamespace: announcement） ============
+
+model Announcement {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  important   Boolean  @default(false) // 重要公告需"确认收到"
+  publishedAt DateTime?
+  authorId    String
+  author      CoreUser  @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+  reads       AnnouncementRead[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([publishedAt])
+  @@map("announcement_announcements")
+}
+
+/// 已读追踪 — 部长视角核心：谁看了没看、重要公告是否确认
+model AnnouncementRead {
+  id             String       @id @default(uuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           CoreUser     @relation(fields: [userId], references: [id])
+  readAt         DateTime     @default(now())
+  confirmed      Boolean      @default(false) // 重要公告"确认收到"
+
+  @@unique([announcementId, userId])
+  @@map("announcement_reads")
 }

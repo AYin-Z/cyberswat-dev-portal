@@ -5,5 +5,6 @@ import type { UiContribution } from './contribution'
  * 对应后端 capabilities/<name>/ 目录，前后端插件一一对应。
  */
 import { exampleUi } from '../capabilities/example/example.ui'
+import { announcementUi } from '../capabilities/announcement/announcement.ui'
 
-export const uiContributions: UiContribution[] = [exampleUi]
+export const uiContributions: UiContribution[] = [exampleUi, announcementUi]
