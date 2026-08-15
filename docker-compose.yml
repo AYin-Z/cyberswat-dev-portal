@@ -26,6 +26,9 @@ services:
       - API_PORT=8093
       - FRONTEND_ORIGIN=https://dev.cyberswat.cn
       - PUBLIC_API_URL=https://dev.cyberswat.cn
+      # GitHub OAuth（创建 OAuth App 后填入 .env）
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
     depends_on:
       - dev-db
     # 不暴露宿主端口：仅 nginx(dev-web) 内网反代
