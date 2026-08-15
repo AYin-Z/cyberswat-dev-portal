@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import StatusBadge from '../../components/StatusBadge.vue'
+import { NTag, NSpin, NButton, NProgress, useMessage } from 'naive-ui'
 
 interface TaskItem {
   id: string
@@ -17,32 +19,47 @@ interface TaskItem {
 
 const auth = useAuthStore()
 const route = useRoute()
+const message = useMessage()
 const project = ref<any>(null)
 const error = ref('')
-
-const statusLabel: Record<string, string> = { TODO: '待接单', IN_PROGRESS: '进行中', REVIEW: '待验收', DONE: '已完成' }
-const priorityLabel: Record<string, string> = { LOW: '低', MEDIUM: '中', HIGH: '高', URGENT: '紧急' }
+const loading = ref(true)
 
 async function load() {
-  const res = await fetch(`/api/projects/${route.params.id}`, { headers: { Authorization: `Bearer ${auth.token}` } })
+  loading.value = true
+  const res = await fetch(`/api/projects/${route.params.id}`, {
+    headers: { Authorization: `Bearer ${auth.token}` },
+  })
   if (!res.ok) {
     error.value = `加载失败: ${res.status}`
+    loading.value = false
     return
   }
   project.value = await res.json()
+  loading.value = false
 }
 
 async function claim(t: TaskItem) {
   await fetch(`/api/tasks/${t.id}/claim`, { method: 'POST', headers: { Authorization: `Bearer ${auth.token}` } })
+  message.success('已认领')
   await load()
 }
 async function submit(t: TaskItem) {
   const note = window.prompt('提交说明（PR 链接/实现简述）：') ?? ''
-  await fetch(`/api/tasks/${t.id}/submit`, { method: 'POST', headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ note }) })
+  await fetch(`/api/tasks/${t.id}/submit`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ note }),
+  })
+  message.success('已提交验收')
   await load()
 }
 async function review(t: TaskItem, approve: boolean) {
-  await fetch(`/api/tasks/${t.id}/review`, { method: 'POST', headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ approve }) })
+  await fetch(`/api/tasks/${t.id}/review`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approve }),
+  })
+  message.success(approve ? '已通过' : '已驳回')
   await load()
 }
 
@@ -50,78 +67,173 @@ onMounted(load)
 </script>
 
 <template>
-  <section v-if="project">
-    <h1 class="title">{{ project.name }}</h1>
-    <p class="desc">{{ project.description }}</p>
-    <div class="meta-line">
-      <span>负责人：{{ project.lead.nickname }}</span>
-      <span v-if="project.repoUrl">仓库：<a :href="project.repoUrl" target="_blank" class="repo">{{ project.repoUrl }}</a></span>
-      <span v-if="project.difficulty">难度：{{ project.difficulty }}</span>
-      <span>进度：{{ project.doneTaskCount }}/{{ project.taskCount }}</span>
-    </div>
+  <section>
+    <n-spin v-if="loading" class="spin" />
+    <p v-else-if="error" class="error">{{ error }}</p>
 
-    <h2 class="sec">成员（{{ project.members?.length ?? 0 }}）</h2>
-    <div class="members">
-      <span v-for="m in project.members" :key="m.id" class="member">{{ m.nickname }}<em v-if="m.role === 'LEAD'"> 负责人</em></span>
-    </div>
+    <template v-else-if="project">
+      <div class="head">
+        <h1 class="title">{{ project.name }}</h1>
+        <status-badge :status="project.status" type="project" />
+      </div>
+      <p class="desc">{{ project.description }}</p>
 
-    <h2 class="sec">任务（{{ project.tasks?.length ?? 0 }}）</h2>
-    <div class="tasks">
-      <div v-for="t in project.tasks" :key="t.id" class="task">
-        <div class="task-head">
-          <span class="t-status" :class="t.status.toLowerCase()">{{ statusLabel[t.status] }}</span>
-          <span class="t-pri" :class="t.priority.toLowerCase()">{{ priorityLabel[t.priority] }}</span>
-          <span class="t-title">{{ t.title }}</span>
-        </div>
-        <p v-if="t.description" class="t-desc">{{ t.description }}</p>
-        <p class="t-meta">
-          指派：{{ t.assignee?.nickname ?? '未指派' }}
-          <template v-if="t.dueAt">· 截止 {{ t.dueAt.slice(0, 10) }}</template>
-          <template v-if="t.submitNote">· 提交：{{ t.submitNote }}</template>
-        </p>
-        <div class="t-actions">
-          <button v-if="t.status === 'TODO'" class="act" @click="claim(t)">认领</button>
-          <button v-if="t.status === 'IN_PROGRESS'" class="act" @click="submit(t)">提交验收</button>
-          <template v-if="t.status === 'REVIEW' && auth.user?.id === t.creator.id">
-            <button class="act ok" @click="review(t, true)">通过</button>
-            <button class="act no" @click="review(t, false)">驳回</button>
-          </template>
+      <div class="meta-row">
+        <span>负责人：<b>{{ project.lead.nickname }}</b></span>
+        <span v-if="project.repoUrl">仓库：<a :href="project.repoUrl" target="_blank" class="repo">{{ project.repoUrl }}</a></span>
+        <span v-if="project.difficulty">难度：{{ project.difficulty }}</span>
+      </div>
+
+      <div class="progress-row">
+        <span class="p-label tnum">进度 {{ project.doneTaskCount }}/{{ project.taskCount }}</span>
+        <n-progress
+          type="line"
+          :percentage="project.taskCount ? Math.round((project.doneTaskCount / project.taskCount) * 100) : 0"
+          :height="6"
+          :show-indicator="false"
+          class="progress"
+        />
+      </div>
+
+      <h2 class="sec">成员（{{ project.members?.length ?? 0 }}）</h2>
+      <div class="members">
+        <span v-for="m in project.members" :key="m.id" class="member">
+          {{ m.nickname }}<em v-if="m.role === 'LEAD'"> 负责人</em>
+        </span>
+      </div>
+
+      <h2 class="sec">任务（{{ project.tasks?.length ?? 0 }}）</h2>
+      <div class="tasks">
+        <div v-for="t in project.tasks" :key="t.id" class="task">
+          <div class="task-head">
+            <status-badge :status="t.status" type="task" />
+            <status-badge :status="t.priority" type="priority" />
+            <span class="t-title">{{ t.title }}</span>
+          </div>
+          <p v-if="t.description" class="t-desc">{{ t.description }}</p>
+          <p class="t-meta">
+            指派：{{ t.assignee?.nickname ?? '未指派' }}
+            <template v-if="t.dueAt">· 截止 {{ t.dueAt.slice(0, 10) }}</template>
+            <template v-if="t.submitNote">· 📎 {{ t.submitNote }}</template>
+          </p>
+          <div class="t-actions">
+            <n-button v-if="t.status === 'TODO'" size="tiny" type="primary" quaternary @click="claim(t)">认领</n-button>
+            <n-button v-if="t.status === 'IN_PROGRESS'" size="tiny" type="primary" quaternary @click="submit(t)">提交验收</n-button>
+            <template v-if="t.status === 'REVIEW' && auth.user?.id === t.creator.id">
+              <n-button size="tiny" type="success" quaternary @click="review(t, true)">通过</n-button>
+              <n-button size="tiny" type="error" quaternary @click="review(t, false)">驳回</n-button>
+            </template>
+          </div>
         </div>
       </div>
-    </div>
-    <p v-if="!project.tasks?.length" class="empty">暂无任务 — 在<a href="/tasks" class="link">任务页</a>创建</p>
+    </template>
   </section>
-  <p v-else-if="error" class="error">{{ error }}</p>
 </template>
 
 <style scoped>
-.title { font-size: 24px; margin-bottom: 8px; }
-.desc { color: var(--muted); line-height: 1.7; margin-bottom: 12px; }
-.meta-line { display: flex; gap: 20px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-bottom: 24px; }
-.repo { color: var(--accent); }
-.sec { font-size: 16px; margin: 20px 0 12px; }
-.members { display: flex; gap: 8px; flex-wrap: wrap; }
-.member { background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 4px 14px; font-size: 13px; }
-.member em { color: var(--accent); font-style: normal; font-size: 12px; }
-.tasks { display: flex; flex-direction: column; gap: 10px; }
-.task { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
-.task-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.t-status { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
-.t-status.todo { color: var(--muted); border: 1px solid var(--muted); }
-.t-status.in_progress { color: #58a6ff; border: 1px solid #58a6ff; }
-.t-status.review { color: #d29922; border: 1px solid #d29922; }
-.t-status.done { color: #3fb950; border: 1px solid #3fb950; }
-.t-pri { font-size: 11px; }
-.t-pri.high, .t-pri.urgent { color: #f85149; }
-.t-pri.medium { color: #d29922; }
-.t-title { font-weight: 600; font-size: 14px; }
-.t-desc { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
-.t-meta { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
-.t-actions { display: flex; gap: 8px; }
-.act { background: var(--accent); border: none; border-radius: 6px; padding: 6px 14px; color: #fff; cursor: pointer; font-size: 12px; }
-.act.ok { background: #238636; }
-.act.no { background: transparent; border: 1px solid #f85149; color: #f85149; }
-.empty { color: var(--muted); font-size: 13px; }
-.link { color: var(--accent); }
-.error { color: #f85149; }
+.spin {
+  display: block;
+  margin: 48px auto;
+}
+.error {
+  color: var(--cs-danger);
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.desc {
+  color: var(--cs-ink-muted);
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.meta-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  color: var(--cs-ink-subtle);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.repo {
+  color: var(--cs-accent);
+}
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.p-label {
+  color: var(--cs-ink-subtle);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.progress {
+  flex: 1;
+}
+.sec {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 20px 0 12px;
+}
+.members {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.member {
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-hairline);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 13px;
+}
+.member em {
+  color: var(--cs-accent);
+  font-style: normal;
+  font-size: 12px;
+}
+.tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.task {
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-hairline);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.task-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.t-title {
+  font-weight: 500;
+  font-size: 14px;
+}
+.t-desc {
+  color: var(--cs-ink-muted);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.t-meta {
+  color: var(--cs-ink-subtle);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.t-actions {
+  display: flex;
+  gap: 8px;
+}
 </style>

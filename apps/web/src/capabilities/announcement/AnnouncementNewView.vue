@@ -2,18 +2,24 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import PageHeader from '../../components/PageHeader.vue'
+import { NInput, NButton, NSwitch, NForm, NFormItem, useMessage } from 'naive-ui'
 
 const auth = useAuthStore()
 const router = useRouter()
+const message = useMessage()
+
 const title = ref('')
 const content = ref('')
 const important = ref(false)
-const error = ref('')
 const submitting = ref(false)
 
 async function submit() {
+  if (!title.value.trim() || !content.value.trim()) {
+    message.warning('标题和正文不能为空')
+    return
+  }
   submitting.value = true
-  error.value = ''
   try {
     const res = await fetch('/api/announcements', {
       method: 'POST',
@@ -21,13 +27,18 @@ async function submit() {
         Authorization: `Bearer ${auth.token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ title: title.value, content: content.value, important: important.value }),
+      body: JSON.stringify({
+        title: title.value,
+        content: content.value,
+        important: important.value,
+      }),
     })
     if (!res.ok) {
       const body = (await res.json()) as { message?: string }
-      error.value = body.message ?? '发布失败'
+      message.error(Array.isArray(body.message) ? body.message[0] : (body.message ?? '发布失败'))
       return
     }
+    message.success('公告已发布')
     router.push('/announcements')
   } finally {
     submitting.value = false
@@ -37,28 +48,48 @@ async function submit() {
 
 <template>
   <section class="wrap">
-    <h1 class="title">发布公告</h1>
-    <p v-if="error" class="error">{{ error }}</p>
-    <form class="form" @submit.prevent="submit">
-      <input v-model="title" placeholder="标题" required />
-      <textarea v-model="content" placeholder="正文内容" rows="6" required />
-      <label class="check">
-        <input v-model="important" type="checkbox" />
-        重要公告（成员需确认收到）
-      </label>
-      <button type="submit" :disabled="submitting">{{ submitting ? '发布中…' : '发布' }}</button>
-    </form>
+    <page-header title="发布公告" sub="重要公告将要求成员确认收到" />
+
+    <n-form class="form" label-placement="top" @submit.prevent="submit">
+      <n-form-item label="标题">
+        <n-input v-model:value="title" placeholder="公告标题" maxlength="100" />
+      </n-form-item>
+      <n-form-item label="正文">
+        <n-input v-model:value="content" type="textarea" placeholder="公告内容" :rows="8" />
+      </n-form-item>
+      <n-form-item label=" ">
+        <div class="imp-row">
+          <n-switch v-model:value="important" />
+          <span class="imp-label">重要公告（成员需确认收到）</span>
+        </div>
+      </n-form-item>
+      <n-button type="primary" attr-type="submit" :loading="submitting" class="submit">
+        发布
+      </n-button>
+    </n-form>
   </section>
 </template>
 
 <style scoped>
-.wrap { max-width: 640px; }
-.title { font-size: 22px; margin-bottom: 16px; }
-.form { display: flex; flex-direction: column; gap: 12px; }
-input, textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; color: var(--fg); font-family: inherit; }
-textarea { resize: vertical; }
-.check { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 6px; }
-button { background: var(--accent); border: none; border-radius: 6px; padding: 10px; color: #fff; cursor: pointer; font-weight: 600; }
-button:disabled { opacity: 0.6; }
-.error { color: #f85149; font-size: 13px; margin-bottom: 8px; }
+.wrap {
+  max-width: 640px;
+}
+.form {
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-hairline);
+  border-radius: 8px;
+  padding: 24px;
+}
+.imp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.imp-label {
+  color: var(--cs-ink-subtle);
+  font-size: 13px;
+}
+.submit {
+  width: 100%;
+}
 </style>

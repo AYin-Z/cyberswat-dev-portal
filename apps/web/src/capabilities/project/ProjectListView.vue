@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import PageHeader from '../../components/PageHeader.vue'
+import StatusBadge from '../../components/StatusBadge.vue'
+import EmptyState from '../../components/EmptyState.vue'
+import { NTag, NSpin, NProgress } from 'naive-ui'
 
 interface ProjectItem {
   id: string
@@ -9,7 +13,6 @@ interface ProjectItem {
   difficulty: string | null
   techStack: string[]
   status: string
-  needPeople: string | null
   lead: { id: string; nickname: string }
   ideaId: string | null
   repoUrl: string | null
@@ -22,21 +25,17 @@ interface ProjectItem {
 const auth = useAuthStore()
 const projects = ref<ProjectItem[]>([])
 const error = ref('')
-
-const statusLabel: Record<string, string> = {
-  ACTIVE: '进行中',
-  PAUSED: '暂停',
-  DONE: '已完成',
-  ARCHIVED: '已归档',
-}
+const loading = ref(true)
 
 async function load() {
   const res = await fetch('/api/projects', { headers: { Authorization: `Bearer ${auth.token}` } })
   if (!res.ok) {
     error.value = `加载失败: ${res.status}`
+    loading.value = false
     return
   }
   projects.value = (await res.json()) as ProjectItem[]
+  loading.value = false
 }
 
 onMounted(load)
@@ -44,53 +43,122 @@ onMounted(load)
 
 <template>
   <section>
-    <h1 class="title">项目</h1>
-    <p class="sub">点子转正后的正式项目 — 人力/任务/成果都在这里。</p>
+    <page-header title="项目" sub="点子转正后的正式项目 — 人力 / 任务 / 成果" />
+
     <p v-if="error" class="error">{{ error }}</p>
-    <div class="grid">
+    <n-spin v-if="loading" class="spin" />
+
+    <div v-else-if="projects.length" class="grid">
       <RouterLink v-for="p in projects" :key="p.id" :to="`/projects/${p.id}`" class="card">
-        <div class="card-head">
-          <span class="status" :class="p.status.toLowerCase()">{{ statusLabel[p.status] }}</span>
+        <div class="card-top">
+          <status-badge :status="p.status" type="project" />
           <span v-if="p.difficulty" class="diff">{{ p.difficulty }}</span>
         </div>
-        <h3>{{ p.name }}</h3>
+        <h3 class="c-title">{{ p.name }}</h3>
         <p class="desc">{{ p.description }}</p>
         <div class="tags">
-          <span v-for="t in p.techStack.slice(0, 4)" :key="t" class="tag">{{ t }}</span>
+          <n-tag v-for="t in p.techStack.slice(0, 4)" :key="t" size="tiny" :bordered="false" class="tag">{{ t }}</n-tag>
         </div>
-        <div class="stats">
-          <span>👥 {{ p.memberCount }}</span>
-          <span>📋 {{ p.doneTaskCount }}/{{ p.taskCount }}</span>
+        <div class="progress-row">
+          <span class="p-label tnum">{{ p.doneTaskCount }}/{{ p.taskCount }}</span>
+          <n-progress
+            type="line"
+            :percentage="p.taskCount ? Math.round((p.doneTaskCount / p.taskCount) * 100) : 0"
+            :height="4"
+            :show-indicator="false"
+            class="progress"
+          />
+          <span class="p-members tnum">{{ p.memberCount }} 人</span>
         </div>
         <p class="meta">负责人：{{ p.lead.nickname }} · {{ p.createdAt.slice(0, 10) }}</p>
       </RouterLink>
     </div>
-    <p v-if="!projects.length && !error" class="empty">
-      暂无项目 — 去<a href="/ideas" class="link">点子墙</a>把好点子转正
-    </p>
+
+    <empty-state v-else text="暂无项目 — 去点子墙把好点子转正" cta="去点子墙" @action="$router.push('/ideas')" />
   </section>
 </template>
 
 <style scoped>
-.title { font-size: 22px; margin-bottom: 6px; }
-.sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-decoration: none; color: var(--fg); }
-.card:hover { border-color: var(--accent); }
-.card-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
-.status { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
-.status.active { color: #3fb950; border: 1px solid #3fb950; }
-.status.paused { color: #d29922; border: 1px solid #d29922; }
-.status.done { color: #58a6ff; border: 1px solid #58a6ff; }
-.status.archived { color: var(--muted); border: 1px solid var(--muted); }
-.diff { color: var(--muted); font-size: 12px; }
-.card h3 { font-size: 16px; margin-bottom: 8px; }
-.desc { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 10px; min-height: 42px; }
-.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.tag { font-size: 11px; color: var(--accent); background: rgba(88, 166, 255, 0.1); padding: 2px 8px; border-radius: 999px; }
-.stats { display: flex; gap: 16px; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
-.meta { color: var(--muted); font-size: 12px; }
-.error { color: #f85149; font-size: 13px; margin-bottom: 10px; }
-.empty { color: var(--muted); font-size: 14px; }
-.link { color: var(--accent); }
+.error {
+  color: var(--cs-danger);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.spin {
+  display: block;
+  margin: 48px auto;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.card {
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-hairline);
+  border-radius: 8px;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--cs-ink);
+  transition: background 0.15s, border-color 0.15s;
+}
+.card:hover {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-hairline-strong);
+}
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.diff {
+  color: var(--cs-ink-subtle);
+  font-size: 12px;
+}
+.c-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  margin-bottom: 8px;
+}
+.desc {
+  color: var(--cs-ink-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  min-height: 40px;
+}
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.tag {
+  background: rgba(88, 166, 255, 0.1);
+  color: var(--cs-accent);
+}
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.p-label {
+  color: var(--cs-ink-subtle);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.progress {
+  flex: 1;
+}
+.p-members {
+  color: var(--cs-ink-subtle);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.meta {
+  color: var(--cs-ink-subtle);
+  font-size: 12px;
+}
 </style>

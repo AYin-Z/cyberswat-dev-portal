@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import PageHeader from '../../components/PageHeader.vue'
+import StatusBadge from '../../components/StatusBadge.vue'
+import EmptyState from '../../components/EmptyState.vue'
+import { NTag, NSpin, NSelect } from 'naive-ui'
 
 interface IdeaItem {
   id: string
@@ -9,7 +13,7 @@ interface IdeaItem {
   need: string
   techStack: string[]
   status: string
-  author: { id: string; nickname: string; grade: string | null }
+  author: { id: string; nickname: string }
   joinerCount: number
   joined: boolean
   createdAt: string
@@ -18,25 +22,29 @@ interface IdeaItem {
 const auth = useAuthStore()
 const items = ref<IdeaItem[]>([])
 const error = ref('')
-const statusFilter = ref('')
+const loading = ref(true)
+const statusFilter = ref<string | null>(null)
 
-const statusLabel: Record<string, string> = {
-  RECRUITING: '招募中',
-  INCUBATING: '孵化中',
-  PROMOTED: '已转正',
-  ARCHIVED: '已废弃',
-}
+const statusOptions = [
+  { label: '全部状态', value: '' },
+  { label: '招募中', value: 'RECRUITING' },
+  { label: '孵化中', value: 'INCUBATING' },
+  { label: '已转正', value: 'PROMOTED' },
+]
 
 async function load() {
+  loading.value = true
   const qs = statusFilter.value ? `?status=${statusFilter.value}` : ''
   const res = await fetch(`/api/ideas${qs}`, {
     headers: { Authorization: `Bearer ${auth.token}` },
   })
   if (!res.ok) {
     error.value = `加载失败: ${res.status}`
+    loading.value = false
     return
   }
   items.value = (await res.json()) as IdeaItem[]
+  loading.value = false
 }
 
 onMounted(load)
@@ -44,60 +52,118 @@ onMounted(load)
 
 <template>
   <section>
-    <div class="head">
-      <h1 class="title">点子墙</h1>
-      <RouterLink to="/ideas/new" class="new-btn">＋ 发布点子</RouterLink>
+    <page-header title="点子墙" sub="有好点子但缺人力/技术力？发上来招募伙伴一起做">
+      <template #actions>
+        <RouterLink to="/ideas/new" class="new-link">＋ 发布点子</RouterLink>
+      </template>
+    </page-header>
+
+    <div class="toolbar">
+      <n-select
+        v-model:value="statusFilter"
+        :options="statusOptions"
+        size="small"
+        class="filter"
+        @update:value="load"
+      />
     </div>
-    <p class="sub">有好点子但缺人力/技术力？发上来招募伙伴一起做。</p>
+
     <p v-if="error" class="error">{{ error }}</p>
-    <div class="filters">
-      <select v-model="statusFilter" @change="load">
-        <option value="">全部状态</option>
-        <option value="RECRUITING">招募中</option>
-        <option value="INCUBATING">孵化中</option>
-        <option value="PROMOTED">已转正</option>
-      </select>
-    </div>
-    <div class="grid">
+    <n-spin v-if="loading" class="spin" />
+
+    <div v-else-if="items.length" class="grid">
       <RouterLink v-for="i in items" :key="i.id" :to="`/ideas/${i.id}`" class="card">
-        <div class="card-head">
-          <span class="status" :class="i.status.toLowerCase()">{{ statusLabel[i.status] }}</span>
-          <span class="joiners">{{ i.joinerCount }} 人加入</span>
+        <div class="card-top">
+          <status-badge :status="i.status" type="idea" />
+          <span class="joiners tnum">{{ i.joinerCount }} 人加入</span>
         </div>
-        <h3>{{ i.title }}</h3>
+        <h3 class="c-title">{{ i.title }}</h3>
         <p class="need">🔧 {{ i.need }}</p>
         <div class="tags">
-          <span v-for="t in i.techStack" :key="t" class="tag">{{ t }}</span>
+          <n-tag v-for="t in i.techStack" :key="t" size="tiny" :bordered="false" class="tag">{{ t }}</n-tag>
         </div>
         <p class="meta">{{ i.author.nickname }} · {{ i.createdAt.slice(0, 10) }}</p>
       </RouterLink>
     </div>
-    <p v-if="!items.length && !error" class="empty">暂无点子，来发第一个？</p>
+
+    <empty-state v-else text="暂无点子" cta="来发第一个点子" @action="$router.push('/ideas/new')" />
   </section>
 </template>
 
 <style scoped>
-.head { display: flex; justify-content: space-between; align-items: center; }
-.title { font-size: 22px; margin-bottom: 4px; }
-.sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
-.new-btn { color: var(--accent); text-decoration: none; font-size: 14px; }
-.filters { margin-bottom: 16px; }
-select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; color: var(--fg); }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-decoration: none; color: var(--fg); }
-.card:hover { border-color: var(--accent); }
-.card-head { display: flex; justify-content: space-between; margin-bottom: 10px; }
-.status { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
-.status.recruiting { color: #3fb950; border: 1px solid #3fb950; }
-.status.incubating { color: #58a6ff; border: 1px solid #58a6ff; }
-.status.promoted { color: #d29922; border: 1px solid #d29922; }
-.status.archived { color: var(--muted); border: 1px solid var(--muted); }
-.joiners { color: var(--muted); font-size: 12px; }
-.card h3 { font-size: 15px; margin-bottom: 8px; }
-.need { color: var(--muted); font-size: 13px; margin-bottom: 10px; line-height: 1.6; }
-.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.tag { font-size: 11px; color: var(--accent); background: rgba(88, 166, 255, 0.1); padding: 2px 8px; border-radius: 999px; }
-.meta { color: var(--muted); font-size: 12px; }
-.error { color: #f85149; font-size: 13px; margin-bottom: 10px; }
-.empty { color: var(--muted); font-size: 14px; }
+.new-link {
+  color: var(--cs-accent);
+  font-size: 13px;
+  font-weight: 500;
+}
+.toolbar {
+  margin-bottom: 16px;
+}
+.filter {
+  width: 160px;
+}
+.error {
+  color: var(--cs-danger);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.spin {
+  display: block;
+  margin: 48px auto;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.card {
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-hairline);
+  border-radius: 8px;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--cs-ink);
+  transition: background 0.15s, border-color 0.15s;
+}
+.card:hover {
+  background: var(--cs-surface-2);
+  border-color: var(--cs-hairline-strong);
+}
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.joiners {
+  color: var(--cs-ink-subtle);
+  font-size: 12px;
+}
+.c-title {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  margin-bottom: 8px;
+}
+.need {
+  color: var(--cs-ink-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  min-height: 40px;
+}
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.tag {
+  background: rgba(88, 166, 255, 0.1);
+  color: var(--cs-accent);
+}
+.meta {
+  color: var(--cs-ink-subtle);
+  font-size: 12px;
+}
 </style>
