@@ -17,25 +17,30 @@
 
 ### 语义命名层（Functional token — 代码只引用语义名，不写裸色值）
 ```
-surface 层级（Linear 式）:
-  surface-base    #0d1117   页面背景
-  surface-raised  #161b22   卡片/面板
-  surface-overlay #21262d   悬浮/hover/抽屉
-text 层级:
-  text-primary    #e6edf3   标题/正文
-  text-secondary  #8b949e   次要/元信息
-  text-disabled   #484f58   禁用
-border 层级:
-  border-default  #30363d   卡片分隔
-  border-subtle   #21262d   弱分隔
-角色色（仅语义用途，不装饰）:
-  accent   #58a6ff  success #3fb950  warning #d29922  error #f85149  info #58a6ff
+画布与表面（dark-saas / Linear-inspired，来源: dsh-design-skills 技能包）:
+  canvas        #0d1117   页面背景（近黑带蓝黑，勿用纯黑）
+  surface-1     #161b22   卡片/面板
+  surface-2     #1c2128   浮层/分组/hover
+  surface-3     #21262d   次级 hover/抽屉
+  surface-4     #242a33   选中态
+hairline（1px 细线分隔，层级靠表面色不靠阴影）:
+  hairline      #30363d   默认分隔线
+  hairline-strong #34343a 强调分隔
+  hairline-subtle #21262d 弱分隔
+ink 文字层级:
+  ink           #e6edf3   主文字
+  ink-muted     #d0d6e0   次级文字
+  ink-subtle    #8b949e   弱化/说明
+  ink-tertiary  #62666d   占位符/禁用
+角色色（仅语义用途）:
+  accent #58a6ff  accent-hover #79b8ff  success #3fb950  warning #d29922  danger #f85149
 ```
-色值来源：Primer 深色 functional token（bg-canvas/blue-5/green-5/yellow-5/red-5）——与主站同源。
+色值基线：Primer 深色 functional token（与主站同源）+ dark-saas 层级结构（4 级表面/3 级描边/4 级文字）。
 
-### 纪律（调研修正⑧：全站 ≤10 主色）
-- 颜色只用于语义（状态/强调/反馈），不做装饰性配色
-- 新增色值必须先进 token 层，页面内禁止裸色值
+### 纪律（调研修正⑧ + dark-saas 原则）
+- **一个强调色**：accent 只出现在 CTA/焦点环/品牌标记，绝不做装饰性点缀
+- **层级靠表面色 + hairline**，避免大面积投影（卡片无阴影或极淡）
+- 颜色只用于语义，新增色值必须先进 token 层，页面内禁止裸色值
 - 对比度 ≥ 4.5:1 硬标准（深色可读性 + 无障碍）
 
 ### 字体与网格（调研修正③）
