@@ -22,11 +22,17 @@
     │    ├─ GET /oauth/authorize     成员浏览器登录(复用现有 JWT 会话) + 授权确认页
     │    ├─ POST /oauth/token        code → access token (JWT, 复用签名密钥) + refresh (复用轮换表)
     │    └─ POST /oauth/register     RFC 7591 动态客户端注册 (loopback redirect 接受)
-    ├─ 工具面: ToolRegistry 全量自动暴露
-    │    ├─ 每个工具 = MCP tool (name/description/inputSchema 已自描述 ✅)
+    ├─ 工具面: ToolRegistry 全量自动暴露 + **scope 过滤** (2026-08-15 拍板: 现在就做)
+    │    ├─ scope ↔ 权限点映射 (按能力包分组: announcement/idea/task/post/invite)
+    │    ├─ 授权页按能力包分组勾选 → access token 携带 scope 声明
+    │    ├─ 工具调用校验: 工具 requiredPermission 的 scope ⊆ token scope
     │    ├─ requiresApproval 工具 → agent 调用进审批队列 (沿用现有机制)
     │    └─ 审计: ToolCallRecord.agentId = oauth client 标识
+    ├─ 滥用防护 (2026-08-15 拍板: 双限额)
+    │    ├─ 读限额 30 次/时 (列表类工具: members.list/ideas.list/...)
+    │    └─ 写限额 5 次/时 (超限进审批队列) — 全挂 ToolRegistry, 零架构改动
     └─ 数据面: member 级脱敏 (授权即成员身份 → 权限点继承)
+    └─ 生命周期: 冻结用户 → 级联撤销 refresh token (按 userId); DCR client 保留
 
 授权模型:
   成员登录 → 授权确认 → code → token → agent 以该成员身份调用工具
@@ -57,7 +63,9 @@
 ## 4. 完成定义（DoD）
 
 - [ ] /mcp 端点上线, 用官方 MCP client 实测工具调用 (list/call)
-- [ ] OAuth 2.1 全流程: 授权 → code → token → 工具调用 → 审计带 agentId
+- [ ] OAuth 2.1 全流程: 授权(scope 分组勾选) → code → token(带 scope) → 工具调用(scope 校验) → 审计带 agentId
+- [ ] 双限额生效: 读 30 次/时 / 写 5 次/时 (超限进审批), 审计聚合视图可用
+- [ ] 冻结用户 → refresh token 级联撤销实测
 - [ ] requiresApproval 工具经 MCP 调用 → 审批队列 → 部长批准后执行
 - [ ] 内置 bot 在社区被 @ 能回答问题 (只读)
 - [ ] /agent 接入页上线, 至少 Claude Desktop 配置实测通过

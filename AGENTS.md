@@ -74,8 +74,9 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
 
 ## 待办（下一轮迭代）
 - 迭代计划：docs/ITERATION-R1.md（人力匹配优先）+ docs/ITERATION-R2.md（agent 体系）；体系愿景见主仓库 docs/VISION.md（v1.2）
-- **AI 友好决策（2026-08-15 拍板）**：系统是一等 MCP Server——OAuth 2.1 + PKCE + RFC 7591 DCR，
-  全量工具自动暴露，agent 权限=成员权限继承+审批兜底+审计（agentId 字段第一版已预留）
+- **AI 友好决策（2026-08-15 三轮拍板）**：系统是一等 MCP Server——OAuth 2.1 + PKCE + RFC 7591 DCR；
+  scope↔权限点映射即做（授权页按能力包勾选）；双限额（读30/时 写5/时超限审批）+审计聚合视图；
+  两级技能词表（分类→技术）；冻结用户级联撤销 refresh token；agent 权限=成员权限继承+审批兜底+审计
 - [ ] R1-P1 个人资料编辑页（技能词表结构化，agent 燃料）/ R1-P2 点子匹配通知 / R1-P3 通知 UI / R1-P4 体验小修 / R1-S1 生产凭证更换
 - [ ] R2-A 内置 bot（社区嵌入式）/ R2-B MCP Server（OAuth 2.1+DCR）/ R2-C /agent 接入页
 - [x] GitHub OAuth 配置（2026-08-15）：OAuth App 已创建（CyberSWAT 开发部子站，回调 https://dev.cyberswat.cn/api/auth/github/callback），
