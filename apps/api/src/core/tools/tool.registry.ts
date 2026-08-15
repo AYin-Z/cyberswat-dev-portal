@@ -55,18 +55,23 @@ export class ToolRegistry {
     )
   }
 
+  /** 全量工具（MCP 用：可见性完全由 token scope 决定） */
+  listAll(): ToolDefinition[] {
+    return [...this.tools.values()]
+  }
+
   /** 调用工具（agent 与内部服务共用入口） */
   async call(
     toolId: string,
     params: unknown,
     ctx: ToolCallContext,
-    opts?: { skipApproval?: boolean },
+    opts?: { skipApproval?: boolean; skipRoleCheck?: boolean },
   ): Promise<unknown> {
     const def = this.tools.get(toolId)
     if (!def) throw new BadRequestException(`工具不存在: ${toolId}`)
 
-    // scope 检查：角色可见性
-    if (def.requiredPermission && !this.permissions.has(ctx.role, def.requiredPermission)) {
+    // scope 检查：角色可见性（MCP 调用时 scope 已由 token 校验，跳过）
+    if (!opts?.skipRoleCheck && def.requiredPermission && !this.permissions.has(ctx.role, def.requiredPermission)) {
       throw new ForbiddenException(`无权调用工具: ${toolId}`)
     }
     // agent 调用限制
@@ -106,18 +111,43 @@ export class ToolRegistry {
     }
   }
 
-  /** 审批：部长/管理员处理 pending 调用 */
-  resolveApproval(recordId: string, approved: boolean, approver: string): void {
+  /** 审批：部长/管理员处理 pending 调用；通过时执行原调用 */
+  async resolveApproval(recordId: string, approved: boolean, approver: string): Promise<void> {
     const record = this.records.find((r) => r.id === recordId && r.status === 'pending')
     if (!record) throw new BadRequestException(`审批记录不存在: ${recordId}`)
-    record.status = approved ? 'ok' : 'rejected'
-    record.approvedBy = approver
-    this.events.emit('tool.approval.resolved', { recordId, approved })
-    this.logger.log(`[tool] ${record.toolId} 审批${approved ? '通过' : '驳回'} by ${approver}`)
+    if (!approved) {
+      record.status = 'rejected'
+      record.approvedBy = approver
+      this.events.emit('tool.approval.resolved', { recordId, approved })
+      this.logger.log(`[tool] ${record.toolId} 审批驳回 by ${approver}`)
+      return
+    }
+    // 通过：执行原调用（caller 为原请求者；角色检查跳过——scope 已授权）
+    try {
+      const result = await this.handlers.get(record.toolId)!(
+        record.params,
+        { caller: record.caller, role: 'member', agentId: record.agentId },
+      )
+      record.result = result
+      record.status = 'ok'
+      record.approvedBy = approver
+      this.events.emit('tool.approval.resolved', { recordId, approved })
+      this.logger.log(`[tool] ${record.toolId} 审批通过并执行 by ${approver}`)
+    } catch (err) {
+      record.status = 'error'
+      record.result = err instanceof Error ? err.message : String(err)
+      record.approvedBy = approver
+      this.logger.error(`[tool] ${record.toolId} 审批后执行失败: ${err instanceof Error ? err.message : err}`)
+    }
   }
 
   /** 审计查询（管理员/审计用） */
   auditLog(): ToolCallRecord[] {
     return [...this.records]
+  }
+
+  /** 待审批队列（审批工作台 R2-D） */
+  pendingList(): ToolCallRecord[] {
+    return this.records.filter((r) => r.status === 'pending')
   }
 }

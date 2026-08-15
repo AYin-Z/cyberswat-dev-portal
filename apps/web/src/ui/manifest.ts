@@ -13,6 +13,8 @@ import { projectUi } from '../capabilities/project/project.ui'
 import { communityUi } from '../capabilities/community/community.ui'
 import { profileUi } from '../capabilities/profile/profile.ui'
 import { moderationUi } from '../capabilities/moderation/moderation.ui'
+import { agentUi } from '../capabilities/agent/agent.ui'
+import { approvalsUi } from '../capabilities/approvals/approvals.ui'
 
 export const uiContributions: UiContribution[] = [
   exampleUi,
@@ -24,4 +26,6 @@ export const uiContributions: UiContribution[] = [
   communityUi,
   profileUi,
   moderationUi,
+  agentUi,
+  approvalsUi,
 ]

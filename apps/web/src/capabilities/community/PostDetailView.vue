@@ -114,7 +114,11 @@ onMounted(load)
       <h2 class="sec tnum">评论（{{ post.commentCount }}）</h2>
       <div class="comments">
         <div v-for="c in post.comments" :key="c.id" class="c">
-          <p class="c-meta">{{ c.author.nickname }} · {{ c.createdAt.slice(0, 16).replace('T', ' ') }}</p>
+          <p class="c-meta">
+            {{ c.author.nickname }}
+            <span v-if="c.content.includes('🤖')" class="ai-badge">🤖 AI 代发</span>
+            · {{ c.createdAt.slice(0, 16).replace('T', ' ') }}
+          </p>
           <p class="c-content">{{ c.content }}</p>
         </div>
         <p v-if="!post.comments.length" class="empty">暂无评论</p>
@@ -135,6 +139,14 @@ onMounted(load)
 <style scoped>
 .wrap {
   max-width: 720px;
+}
+.ai-badge {
+  font-size: 11px;
+  color: var(--cs-accent);
+  border: 1px solid var(--cs-hairline);
+  border-radius: 4px;
+  padding: 0 6px;
+  margin-left: 4px;
 }
 .post-actions {
   display: flex;

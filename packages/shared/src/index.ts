@@ -123,6 +123,7 @@ export type CoreEventMap = {
   'idea.created': { ideaId: string }
   'idea.promoted': { ideaId: string; projectId: string }
   'post.mentioned': { postId: string; mentionedUserIds: string[] }
+  'bot.mention': { content: string; postId: string; byUserId: string; commentId?: string }
 }
 
 // ============ 用户与身份 ============

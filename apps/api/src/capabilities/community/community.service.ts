@@ -99,6 +99,7 @@ export class CommunityService {
       },
     })
     await this.handleMentions(data.content, authorId, post.id, undefined)
+    this.events.emit('bot.mention', { content: data.content, postId: post.id, byUserId: authorId })
     this.logger.log(`[community] 帖子 "${post.title}" by ${authorId} (${data.board})`)
     return this.toPostView(post, false)
   }
@@ -148,6 +149,7 @@ export class CommunityService {
       })
     }
     await this.handleMentions(content, authorId, postId, comment.id)
+    this.events.emit('bot.mention', { content, postId, byUserId: authorId, commentId: comment.id })
     return { id: comment.id, content: comment.content, author: comment.author, createdAt: comment.createdAt.toISOString() }
   }
 

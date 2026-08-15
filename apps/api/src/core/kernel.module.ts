@@ -14,6 +14,7 @@ import { NotificationsModule } from './notifications/notifications.module'
 import { SkillsModule } from './skills/skills.module'
 import { ModerationModule } from './moderation/moderation.module'
 import { GatewayModule } from './gateway/gateway.module'
+import { McpModule } from './mcp/mcp.module'
 import { InviteService } from './invites/invite.service'
 import { HealthController } from './health.controller'
 // 能力包（插件行）：新增能力包时在此追加 import + imports
@@ -21,6 +22,7 @@ import { ExampleModule } from '../capabilities/example/example.module'
 import { AnnouncementModule } from '../capabilities/announcement/announcement.module'
 import { IdeaModule } from '../capabilities/idea-wall/idea.module'
 import { IdeaMatchService } from '../capabilities/idea-wall/idea-match.service'
+import { BotModule } from '../capabilities/bot/bot.module'
 import { ProjectModule } from '../capabilities/project/project.module'
 import { CommunityModule } from '../capabilities/community/community.module'
 
@@ -43,12 +45,14 @@ import { CommunityModule } from '../capabilities/community/community.module'
     SkillsModule,
     ModerationModule,
     GatewayModule,
+    McpModule,
     // —— 能力包装配区 ——
     ExampleModule,
     AnnouncementModule,
     IdeaModule,
     ProjectModule,
     CommunityModule,
+    BotModule,
   ],
   controllers: [HealthController, MeController],
   providers: [IdeaMatchService],

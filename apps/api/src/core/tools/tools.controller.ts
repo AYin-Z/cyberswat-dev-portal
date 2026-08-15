@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common'
+import { Body, Controller, ForbiddenException, Get, Param, Post } from '@nestjs/common'
 import { ToolRegistry, type ToolCallContext } from './tool.registry'
 import { CurrentUser, type AuthUser } from '../permissions/permission.decorator'
 
@@ -35,5 +35,21 @@ export class ToolsController {
   @Get('audit')
   audit() {
     return this.registry.auditLog()
+  }
+
+  /** 待审批队列（部长处置：agent 危险操作） */
+  @Get('pending')
+  pending() {
+    return this.registry.pendingList()
+  }
+
+  /** 审批：批准/驳回 */
+  @Post('pending/:recordId')
+  resolve(@Param('recordId') recordId: string, @Body('approve') approve: boolean, @CurrentUser() user: AuthUser) {
+    if (user.role !== 'dept-leader' && user.role !== 'admin') {
+      throw new ForbiddenException('仅部长可审批')
+    }
+    this.registry.resolveApproval(recordId, approve === true, user.id)
+    return { ok: true }
   }
 }

@@ -1,8 +1,19 @@
-import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common'
+import { Controller, Post, Body, Get, UseGuards, Res } from '@nestjs/common'
+import type { Response } from 'express'
 import { AuthGuard } from '@nestjs/passport'
 import { AuthService, type LoginResult } from './auth.service'
 import { Public, CurrentUser, type AuthUser } from '../permissions/permission.decorator'
 import { IsEmail, IsString, MinLength } from 'class-validator'
+
+/** 种会话 cookie（OAuth authorize 需要浏览器会话；httpOnly + SameSite=Lax） */
+function setSessionCookie(res: Response, accessToken: string) {
+  res.cookie('cs_session', accessToken, {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 15 * 60 * 1000,
+    path: '/',
+  })
+}
 
 class RegisterDto {
   @IsEmail() email!: string
@@ -28,21 +39,27 @@ export class AuthController {
   /** 注册：必须携带有效邀请令牌（角色由邀请决定） */
   @Public()
   @Post('register')
-  register(@Body() dto: RegisterDto): Promise<LoginResult> {
-    return this.auth.register(dto.email, dto.password, dto.nickname, dto.inviteToken)
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response): Promise<LoginResult> {
+    const result = await this.auth.register(dto.email, dto.password, dto.nickname, dto.inviteToken)
+    setSessionCookie(res, result.accessToken)
+    return result
   }
 
   @Public()
   @Post('login')
-  login(@Body() dto: LoginDto): Promise<LoginResult> {
-    return this.auth.login(dto.email, dto.password)
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response): Promise<LoginResult> {
+    const result = await this.auth.login(dto.email, dto.password)
+    setSessionCookie(res, result.accessToken)
+    return result
   }
 
   /** refresh 轮换：旧 token 作废，签发新对 */
   @Public()
   @Post('refresh')
-  refresh(@Body() dto: RefreshDto): Promise<LoginResult> {
-    return this.auth.refresh(dto.refreshToken)
+  async refresh(@Body() dto: RefreshDto, @Res({ passthrough: true }) res: Response): Promise<LoginResult> {
+    const result = await this.auth.refresh(dto.refreshToken)
+    setSessionCookie(res, result.accessToken)
+    return result
   }
 
   /** 当前登录用户信息（受保护路由示例） */

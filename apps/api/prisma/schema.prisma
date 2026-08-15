@@ -407,3 +407,70 @@ model CoreReport {
   @@index([status, createdAt])
   @@map("core_reports")
 }
+
+// ============ Agent 体系（R2） ============
+
+/// Agent 配置（内置 bot 首行数据；部门 bot 同表扩展）
+model CoreAgent {
+  id        String   @id @default(uuid())
+  name      String   @unique // dev-assistant / attack-assistant ...
+  displayName String // 展示名：开发部助理
+  persona   String // 人格提示词
+  identity  String   @unique // bot:<name> 对应 core_users 身份
+  userId    String? // 关联的 bot 用户 id（core_users）
+  tools     String[] @default([]) // 工具白名单覆盖（空=继承默认可见集）
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("core_agents")
+}
+
+// ============ OAuth 2.1（R2-B MCP 接入） ============
+
+/// DCR 注册的 OAuth 客户端（成员 agent）
+model CoreOauthClient {
+  id           String   @id // client_id
+  secretHash   String? // client_secret_hash（PKCE 流程可为空）
+  redirectUris String[] @default([])
+  grantTypes   String[] @default([])
+  responseTypes String[] @default([])
+  scope        String   @default("") // 注册时声明的默认 scope
+  clientName   String?
+  issuedAt     DateTime @default(now())
+  secretExpiresAt DateTime?
+  createdBy    String? // 发起注册的成员（DCR 无认证时为 null）
+
+  @@map("core_oauth_clients")
+}
+
+/// 授权码（一次性）
+model CoreOauthCode {
+  id          String   @id @default(uuid())
+  clientId    String
+  code        String   @unique
+  codeChallenge String // PKCE S256
+  userId      String
+  scopes      String[] @default([])
+  redirectUri String
+  expiresAt   DateTime
+  used        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@map("core_oauth_codes")
+}
+
+/// OAuth access/refresh token（签发/轮换/撤销）
+model CoreOauthToken {
+  id         String   @id @default(uuid())
+  clientId   String
+  userId     String
+  scope      String[] @default([])
+  tokenHash  String   @unique // refresh token 哈希
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("core_oauth_tokens")
+}
