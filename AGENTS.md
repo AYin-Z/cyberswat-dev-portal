@@ -73,13 +73,14 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
 - [x] 全功能端到端线上验证（2026-08-15）
 
 ## 待办（下一轮迭代）
-- **最终设计定稿**：docs/DESIGN.md（2026-08-15 三轮评审+三轮压力测试，19 项裁决总表）
+- **最终设计定稿**：docs/DESIGN.md（19 项裁决总表）+ docs/FRONTEND.md（前端设计：Naive UI/侧边栏工作台/token/仪表盘）
 - 迭代计划：docs/ITERATION-R1.md（人力匹配优先）+ docs/ITERATION-R2.md（agent 体系）；体系愿景见主仓库 docs/VISION.md（v1.4）
 - **AI 友好决策（2026-08-15 三轮拍板）**：系统是一等 MCP Server——OAuth 2.1 + PKCE + RFC 7591 DCR；
   scope=权限点级（授权页逐项勾选，默认只读）；双限额（读30/时 写5/时超限审批）+审计聚合视图；
   core_agents 表存 bot 人格；AI 代发标识 authorViaAgent；三客户端交叉验证（inspector/Claude/hermes）；
   两级技能词表（分类→技术）；冻结用户级联撤销 refresh token；agent 权限=成员权限继承+审批兜底+审计
-- [ ] R1: P1 资料页(两级词表+匹配开关) / P2 匹配通知(≤3条/天) / P3 通知UI / P4 体验小修 / P5 内容治理(删+举报) / P6 项目级权限(LEAD校验) / S1 凭证+每日备份 / T1 e2e测试基建
+- [ ] R1-F: 前端基建先行（Naive UI + token + 侧边栏 + 通用组件 + 仪表盘，见 FRONTEND.md）
+- [ ] R1: P1 资料页(两级词表+匹配开关) / P2 匹配通知(≤3条/天) / P3 通知UI / P5 内容治理(删+举报) / P6 项目级权限(LEAD校验) / S1 凭证+每日备份 / T1 e2e测试基建
 - [ ] R2: A 内置bot(core_agents+AI署名) / B MCP Server(OAuth2.1+DCR+scope权限点级+双限额) / C /agent接入页 / D 审批工作台
 - [x] GitHub OAuth 配置（2026-08-15）：OAuth App 已创建（CyberSWAT 开发部子站，回调 https://dev.cyberswat.cn/api/auth/github/callback），
   凭据存 ~/.cyberswat-dev-prod.env（权限 600，不入库），容器 --env-file 注入
