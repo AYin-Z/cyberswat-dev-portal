@@ -28,6 +28,7 @@ CyberSWAT 网络特警队开发部子站（dev.cyberswat.cn），插件化架构
 - [x] M1c: 邀请制成员生命周期 + refresh token 轮换
 - [x] M2a: 点子墙能力包（发布/招募/加入/状态流转/转正预留 + agent 工具）
 - [x] M2b: 成员主页（Vidar 卡片，脱敏）
-- [ ] M3: 任务分派 + 点子孵化（项目表 + 转正关联）
-- [ ] M4: 轻量社区（socket.io 通知）
-- [ ] M5: 上线 dev.cyberswat.cn（容器 + ingress + CNAME）
+- [x] M3: 任务分派 + 点子孵化（项目表 + 转正关联 + 任务闭环）
+- [x] M4: 轻量社区（帖子/评论/点赞/@提及 + socket.io 实时通知）
+- [x] M5: 上线 dev.cyberswat.cn（Docker 容器 8092 + CF Tunnel ingress + DNS CNAME）
+- [x] 全功能端到端线上验证（2026-08-15）

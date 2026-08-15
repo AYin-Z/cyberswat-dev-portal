@@ -1,0 +1,53 @@
+# CyberSWAT 开发部子站 — 生产部署
+# 架构: dev.cyberswat.cn → CF Tunnel → 8092 nginx → dev-web(静态) + dev-api(内网 8093) + dev-db(内网 5432)
+# 构建策略沿用主站: 宿主 pnpm build → 镜像 COPY dist（容器内不做 npm，规避 fake-ip 坑）
+
+services:
+  dev-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: cyberswat-dev-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8092:80"
+    depends_on:
+      - dev-api
+
+  dev-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: cyberswat-dev-api
+    restart: unless-stopped
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - DATABASE_URL=postgresql://cyberswat:cyberswat@dev-db:5432/cyberswat_dev?schema=public
+      - API_PORT=8093
+      - FRONTEND_ORIGIN=https://dev.cyberswat.cn
+      - PUBLIC_API_URL=https://dev.cyberswat.cn
+    depends_on:
+      - dev-db
+    # 不暴露宿主端口：仅 nginx(dev-web) 内网反代
+    networks:
+      - cyberdev
+
+  dev-db:
+    image: postgres:16-alpine
+    container_name: cyberswat-dev-db-prod
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=cyberswat
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-cyberswat}
+      - POSTGRES_DB=cyberswat_dev
+    volumes:
+      - cyberdev-pgdata:/var/lib/postgresql/data
+    networks:
+      - cyberdev
+
+volumes:
+  cyberdev-pgdata:
+
+networks:
+  cyberdev:
+    driver: bridge

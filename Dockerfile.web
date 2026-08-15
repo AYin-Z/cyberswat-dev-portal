@@ -1,0 +1,8 @@
+# 开发部子站 Web — nginx 静态托管 + API/socket.io 反代
+# 宿主构建 dist → 镜像 COPY（容器内不做 npm，规避 fake-ip 坑）
+FROM nginx:alpine
+
+COPY apps/web/dist /usr/share/nginx/html
+COPY deploy/nginx-dev.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80

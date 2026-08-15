@@ -12,10 +12,10 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   )
-  // 内核服务仅内网暴露（nginx 反代 8092 → 8093）
+  // 容器内绑定 0.0.0.0（nginx 从 docker 网络反代；公网不暴露该端口）
   const port = Number(process.env.API_PORT ?? 8093)
-  await app.listen(port, '127.0.0.1')
-  console.log(`[cyberswat-dev-api] kernel listening on http://127.0.0.1:${port}/api`)
+  await app.listen(port, process.env.API_HOST ?? '0.0.0.0')
+  console.log(`[cyberswat-dev-api] kernel listening on http://${process.env.API_HOST ?? '0.0.0.0'}:${port}/api`)
 }
 
 bootstrap()

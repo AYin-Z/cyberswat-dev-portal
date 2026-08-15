@@ -1,0 +1,17 @@
+# 开发部子站 API — 宿主 pnpm deploy 产物 → 镜像
+# 用 slim(glibc) 而非 alpine(musl)：宿主生成的 Prisma 引擎直接兼容，无需容器内下载
+FROM node:24-slim
+
+# Prisma 引擎需要 OpenSSL
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 宿主 deploy 产物（生产依赖 + dist + prisma schema + prisma CLI）
+COPY deploy/api /app
+
+ENV NODE_ENV=production
+EXPOSE 8093
+
+# 启动：先跑迁移（幂等），再起服务
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
