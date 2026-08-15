@@ -22,10 +22,12 @@
     │    ├─ GET /oauth/authorize     成员浏览器登录(复用现有 JWT 会话) + 授权确认页
     │    ├─ POST /oauth/token        code → access token (JWT, 复用签名密钥) + refresh (复用轮换表)
     │    └─ POST /oauth/register     RFC 7591 动态客户端注册 (loopback redirect 接受)
-    ├─ 工具面: ToolRegistry 全量自动暴露 + **scope 过滤** (2026-08-15 拍板: 现在就做)
-    │    ├─ scope ↔ 权限点映射 (按能力包分组: announcement/idea/task/post/invite)
-    │    ├─ 授权页按能力包分组勾选 → access token 携带 scope 声明
-    │    ├─ 工具调用校验: 工具 requiredPermission 的 scope ⊆ token scope
+    ├─ 工具面: ToolRegistry 全量自动暴露 + **scope 过滤** (2026-08-15 拍板: 权限点级)
+    │    ├─ scope = 权限点 id 列表 (announcement.view/idea.post/task.assign/...)
+    │    ├─ 授权页展示全部权限点(含描述)逐项勾选, 默认只读勾选/写不勾 (防全勾)
+    │    ├─ 工具调用校验: 工具 requiredPermission ∈ token scope
+    │    ├─ core_agents 表: 内置 bot 首行数据 (persona/白名单覆盖/启用状态), 部门 bot 同表扩展
+    │    ├─ AI 代发标识: 写操作 authorViaAgent 字段 → 🤖 角标
     │    ├─ requiresApproval 工具 → agent 调用进审批队列 (沿用现有机制)
     │    └─ 审计: ToolCallRecord.agentId = oauth client 标识
     ├─ 滥用防护 (2026-08-15 拍板: 双限额)
@@ -70,6 +72,12 @@
 - [ ] 内置 bot 在社区被 @ 能回答问题 (只读)
 - [ ] /agent 接入页上线, 至少 Claude Desktop 配置实测通过
 - [ ] 双仓推送 + AGENTS.md 里程碑更新
+
+## 4.5 审批工作台（R2 依赖，需细化）
+- 部长收到审批请求的入口：通知（现有体系）+ 专用工作台页
+- 工作台：待审批队列（来源: 内置 bot / 成员 agent / 人工工具调用）→ 查看参数 → 批准/驳回 + 备注
+- 审批记录可追溯（已有 ToolCallRecord.approvedBy）
+- 与 notification 联动: tool.approval.requested 事件 → 通知 dept-leader/admin
 
 ## 5. 风险
 
