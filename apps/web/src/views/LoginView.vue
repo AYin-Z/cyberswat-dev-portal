@@ -27,7 +27,7 @@ async function submit() {
       <input v-model="email" type="email" placeholder="邮箱" required />
       <input v-model="password" type="password" placeholder="密码" required />
       <button type="submit">登录</button>
-      <p class="hint">开发期可用 curl 注册测试账号（/api/auth/register）</p>
+      <p class="hint">没有账号？需要部长发送<b>邀请链接</b>才能注册（邀请制）</p>
     </form>
   </section>
 </template>

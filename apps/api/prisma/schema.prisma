@@ -85,6 +85,37 @@ model CorePlugin {
   @@map("core_plugins")
 }
 
+/// 邀请令牌 — 成员生命周期入口（部长开邀请，候选人凭链接注册）
+/// 令牌只存哈希：即使 DB 泄露也不能伪造邀请
+model CoreInvite {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  role      CoreRole  @default(MEMBER) // 邀请授予的角色
+  expiresAt DateTime
+  maxUses   Int       @default(1) // 可限定名额（招新批量化）
+  usedCount Int       @default(0)
+  createdBy String // 创建者 id（审计）
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+  @@map("core_invites")
+}
+
+/// refresh token 轮换 — 签发时落库，轮换时旧 token 标记 revoked（防重放）
+model CoreRefreshToken {
+  id         String    @id @default(uuid())
+  tokenHash  String    @unique
+  userId     String
+  expiresAt  DateTime
+  revoked    Boolean   @default(false)
+  replacedBy String? // 轮换后的新 token id（审计链）
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@map("core_refresh_tokens")
+}
+
 // ============ 公告能力包（announcement_，dbNamespace: announcement） ============
 
 model Announcement {
