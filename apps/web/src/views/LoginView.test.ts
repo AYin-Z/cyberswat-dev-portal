@@ -91,6 +91,52 @@ describe('LoginView.vue', () => {
     expect(router.currentRoute.value.path).toBe('/')
   })
 
+  it('🟡-1：携带 ?next=/tasks 登录成功 → 回跳 /tasks（深层页回跳）', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonOk({
+          accessToken: 'acc-9',
+          refreshToken: 'ref-9',
+          user: { id: 'u1', role: 'member', nickname: 'Ayin' },
+        }),
+      ),
+    )
+    await router.push('/login?next=/tasks')
+    await router.isReady()
+    const w = mount(LoginView, { global: { plugins: [router] } })
+
+    await w.find('input[type="email"]').setValue('a@cyberswat.cn')
+    await w.find('input[type="password"]').setValue('secret')
+    await w.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/tasks')
+  })
+
+  it('🟡-1 防 open redirect：?next=https://evil.example → 回落首页', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonOk({
+          accessToken: 'acc-9',
+          refreshToken: 'ref-9',
+          user: { id: 'u1', role: 'member', nickname: 'Ayin' },
+        }),
+      ),
+    )
+    await router.push('/login?next=https%3A%2F%2Fevil.example%2Fphish')
+    await router.isReady()
+    const w = mount(LoginView, { global: { plugins: [router] } })
+
+    await w.find('input[type="email"]').setValue('a@cyberswat.cn')
+    await w.find('input[type="password"]').setValue('secret')
+    await w.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
   it('表单登录：失败 → 显示「邮箱或密码错误」', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 401 })))
     await router.push('/login')

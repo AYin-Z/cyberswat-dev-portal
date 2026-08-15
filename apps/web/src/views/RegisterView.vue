@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { api, ApiError } from '../lib/api'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -19,26 +20,25 @@ async function submit() {
   submitting.value = true
   error.value = ''
   try {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value,
-        nickname: nickname.value,
-        inviteToken,
-      }),
-    })
-    if (!res.ok) {
-      const body = (await res.json()) as { message?: string | string[] }
-      error.value = Array.isArray(body.message) ? body.message[0] : (body.message ?? '注册失败')
-      return
-    }
-    const data = (await res.json()) as { accessToken: string; user: { id: string; role: string; nickname: string } }
-    auth.token = data.accessToken
+    // 🟡-8：走 setTokens 持久化双 token（注册用户同样获得 14 天续期能力）
+    const data = await api<{ accessToken: string; refreshToken: string; user: { id: string; role: string; nickname: string } }>(
+      '/api/auth/register',
+      {
+        method: 'POST',
+        skipAuth: true,
+        body: JSON.stringify({
+          email: email.value,
+          password: password.value,
+          nickname: nickname.value,
+          inviteToken,
+        }),
+      },
+    )
+    auth.setTokens(data.accessToken, data.refreshToken)
     auth.user = data.user
-    localStorage.setItem('dev_token', data.accessToken)
     router.push('/')
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : '注册失败'
   } finally {
     submitting.value = false
   }

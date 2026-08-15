@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { NTag, NSpin, NButton } from 'naive-ui'
@@ -17,7 +17,6 @@ interface PostItem {
   createdAt: string
 }
 
-const auth = useAuthStore()
 const posts = ref<PostItem[]>([])
 const board = ref('')
 const error = ref('')
@@ -34,14 +33,13 @@ const boardColor: Record<string, 'default' | 'error' | 'success' | 'warning'> = 
 async function load() {
   loading.value = true
   const qs = board.value ? `?board=${board.value}` : ''
-  const res = await fetch(`/api/posts${qs}`, { headers: { Authorization: `Bearer ${auth.token}` } })
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    posts.value = await api<PostItem[]>(`/api/posts${qs}`)
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  posts.value = (await res.json()) as PostItem[]
-  loading.value = false
 }
 
 function toggleBoard(b: string) {

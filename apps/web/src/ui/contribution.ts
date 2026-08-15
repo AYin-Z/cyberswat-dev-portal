@@ -9,8 +9,8 @@ import type { Component } from 'vue'
 export interface UiContribution {
   /** 插件 id（与后端 PluginManifest.id 对齐，如 dev.example） */
   pluginId: string
-  /** 菜单项（按序合并进全局菜单） */
-  menu?: { path: string; label: string }[]
+  /** 菜单项（按序合并进全局菜单）；roles 省略 = 全员可见 */
+  menu?: { path: string; label: string; roles?: string[] }[]
   /** 路由表（path 必须带插件前缀避免冲突） */
   routes?: {
     path: string

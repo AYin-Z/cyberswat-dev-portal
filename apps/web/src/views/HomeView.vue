@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { api } from '../lib/api'
 import PageHeader from '../components/PageHeader.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import EmptyState from '../components/EmptyState.vue'
@@ -54,19 +55,24 @@ async function load() {
     loading.value = false
     return
   }
-  const h = { Authorization: `Bearer ${auth.token}` }
-  // 🟡-7：我的任务 = 指派给我或我创建的（按 assigneeId 过滤）
-  const [t, i, n, a] = await Promise.all([
-    fetch(`/api/tasks?assigneeId=${auth.user?.id ?? ''}`, { headers: h }).then((r) => r.json()),
-    fetch('/api/ideas', { headers: h }).then((r) => r.json()),
-    fetch('/api/notifications', { headers: h }).then((r) => r.json()),
-    fetch('/api/announcements', { headers: h }).then((r) => r.json()),
-  ])
-  tasks.value = (t ?? []).slice(0, 6)
-  ideas.value = (i ?? []).filter((x: IdeaItem) => x.status === 'RECRUITING').slice(0, 4)
-  notices.value = (n ?? []).slice(0, 5)
-  anns.value = (a ?? []).slice(0, 4)
-  loading.value = false
+  try {
+    // 🟡-7：我的任务 = 指派给我或我创建的（按 assigneeId 过滤）
+    // 🔴-4/🟡-4：统一走 api()（自动带 token / 401 续期 / 非 2xx 抛错，不再裸解析 JSON）
+    const [t, i, n, a] = await Promise.all([
+      api<TaskItem[]>(`/api/tasks?assigneeId=${auth.user?.id ?? ''}`),
+      api<IdeaItem[]>('/api/ideas'),
+      api<NoticeItem[]>('/api/notifications'),
+      api<AnnItem[]>('/api/announcements'),
+    ])
+    tasks.value = (t ?? []).slice(0, 6)
+    ideas.value = (i ?? []).filter((x: IdeaItem) => x.status === 'RECRUITING').slice(0, 4)
+    notices.value = (n ?? []).slice(0, 5)
+    anns.value = (a ?? []).slice(0, 4)
+  } catch (e) {
+    console.error('工作台加载失败', e)
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(load)

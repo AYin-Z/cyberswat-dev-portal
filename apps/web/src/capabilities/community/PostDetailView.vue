@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import { NTag, NInput, NButton, NSpin, useMessage } from 'naive-ui'
 
 const auth = useAuthStore()
@@ -17,67 +18,63 @@ const boardLabel: Record<string, string> = { GENERAL: '灌水', HELP: '求助', 
 
 async function load() {
   loading.value = true
-  const res = await fetch(`/api/posts/${route.params.id}`, {
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    post.value = await api(`/api/posts/${route.params.id}`)
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  post.value = await res.json()
-  loading.value = false
 }
 
 async function comment() {
   if (!commentText.value.trim()) return
   submitting.value = true
-  const res = await fetch(`/api/posts/${post.value.id}/comments`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: commentText.value }),
-  })
-  if (!res.ok) {
-    message.error('评论失败')
+  try {
+    await api(`/api/posts/${post.value.id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content: commentText.value }),
+    })
+    commentText.value = ''
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
     submitting.value = false
-    return
   }
-  commentText.value = ''
-  submitting.value = false
-  await load()
 }
 
 async function like() {
-  await fetch(`/api/posts/${post.value.id}/like`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  await load()
+  try {
+    await api(`/api/posts/${post.value.id}/like`, { method: 'POST' })
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 
 async function report() {
   const reason = window.prompt('举报原因：') ?? ''
   if (!reason.trim()) return
-  const res = await fetch(`/api/moderation/report/post/${post.value.id}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reason }),
-  })
-  if (res.ok) message.success('已提交举报，部长将处置')
-  else message.error('举报失败')
+  try {
+    await api(`/api/moderation/report/post/${post.value.id}`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    })
+    message.success('已提交举报，部长将处置')
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 
 async function removePost() {
   if (!window.confirm('确认删除该帖子？（软删除，可留审计）')) return
-  const res = await fetch(`/api/moderation/post/${post.value.id}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  if (res.ok) {
+  try {
+    await api(`/api/moderation/post/${post.value.id}`, { method: 'DELETE' })
     message.success('已删除')
     await load()
-  } else {
-    message.error('删除失败（只能删自己的或部长）')
+  } catch (e) {
+    message.error((e as Error).message)
   }
 }
 

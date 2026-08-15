@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { NDataTable, NButton, NTag, NSpin, useMessage } from 'naive-ui'
@@ -16,27 +16,31 @@ interface PendingItem {
   createdAt: string
 }
 
-const auth = useAuthStore()
 const message = useMessage()
 const items = ref<PendingItem[]>([])
 const loading = ref(true)
 
 async function load() {
-  const res = await fetch('/api/tools/pending', { headers: { Authorization: `Bearer ${auth.token}` } })
-  if (res.ok) {
-    items.value = (await res.json()) as PendingItem[]
+  try {
+    items.value = await api<PendingItem[]>('/api/tools/pending')
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 async function resolve(id: string, approve: boolean) {
-  await fetch(`/api/tools/pending/${id}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ approve }),
-  })
-  message.success(approve ? '已批准并执行' : '已驳回')
-  await load()
+  try {
+    await api(`/api/tools/pending/${id}`, {
+      method: 'POST',
+      body: JSON.stringify({ approve }),
+    })
+    message.success(approve ? '已批准并执行' : '已驳回')
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 
 const columns: DataTableColumns<PendingItem> = [

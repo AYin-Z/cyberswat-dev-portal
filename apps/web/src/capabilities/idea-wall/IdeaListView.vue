@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
 import EmptyState from '../../components/EmptyState.vue'
@@ -19,7 +19,6 @@ interface IdeaItem {
   createdAt: string
 }
 
-const auth = useAuthStore()
 const items = ref<IdeaItem[]>([])
 const error = ref('')
 const loading = ref(true)
@@ -35,16 +34,13 @@ const statusOptions = [
 async function load() {
   loading.value = true
   const qs = statusFilter.value ? `?status=${statusFilter.value}` : ''
-  const res = await fetch(`/api/ideas${qs}`, {
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    items.value = await api<IdeaItem[]>(`/api/ideas${qs}`)
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  items.value = (await res.json()) as IdeaItem[]
-  loading.value = false
 }
 
 onMounted(load)

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import { NInput, NButton, NForm, NFormItem, useMessage } from 'naive-ui'
 
-const auth = useAuthStore()
 const router = useRouter()
 const message = useMessage()
 
@@ -26,18 +25,14 @@ async function submit() {
       .split(/[,，、\s]+/)
       .map((s) => s.trim())
       .filter(Boolean)
-    const res = await fetch('/api/ideas', {
+    await api('/api/ideas', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: title.value, description: description.value, need: need.value, techStack }),
     })
-    if (!res.ok) {
-      const body = (await res.json()) as { message?: string | string[] }
-      message.error(Array.isArray(body.message) ? body.message[0] : (body.message ?? '发布失败'))
-      return
-    }
     message.success('点子已发布')
     router.push('/ideas')
+  } catch (e) {
+    message.error((e as Error).message)
   } finally {
     submitting.value = false
   }

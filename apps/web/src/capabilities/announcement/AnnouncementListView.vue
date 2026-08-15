@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
-import { NTag, NSpin } from 'naive-ui'
+import { NTag, NSpin, useMessage } from 'naive-ui'
 
 interface AnnouncementItem {
   id: string
@@ -16,7 +16,7 @@ interface AnnouncementItem {
   confirmed: boolean
 }
 
-const auth = useAuthStore()
+const message = useMessage()
 const items = ref<AnnouncementItem[]>([])
 const error = ref('')
 const loading = ref(true)
@@ -24,30 +24,30 @@ const loading = ref(true)
 async function load() {
   loading.value = true
   error.value = ''
-  const res = await fetch('/api/announcements', {
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    items.value = await api<AnnouncementItem[]>('/api/announcements')
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  items.value = (await res.json()) as AnnouncementItem[]
-  loading.value = false
 }
 
 async function open(a: AnnouncementItem) {
-  await fetch(`/api/announcements/${a.id}`, {
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
+  try {
+    await api(`/api/announcements/${a.id}`)
+  } catch (e) {
+    message.error((e as Error).message)
+  }
   await load()
 }
 
 async function confirm(a: AnnouncementItem) {
-  await fetch(`/api/announcements/${a.id}/confirm`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
+  try {
+    await api(`/api/announcements/${a.id}/confirm`, { method: 'POST' })
+  } catch (e) {
+    message.error((e as Error).message)
+  }
   await load()
 }
 

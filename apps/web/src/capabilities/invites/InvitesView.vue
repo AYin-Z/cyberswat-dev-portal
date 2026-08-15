@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { NButton, NTag, NSpin, NDataTable, useMessage } from 'naive-ui'
@@ -17,7 +17,6 @@ interface InviteItem {
   createdAt: string
 }
 
-const auth = useAuthStore()
 const message = useMessage()
 const items = ref<InviteItem[]>([])
 const error = ref('')
@@ -27,45 +26,40 @@ const creating = ref(false)
 
 async function load() {
   loading.value = true
-  const res = await fetch('/api/invites', { headers: { Authorization: `Bearer ${auth.token}` } })
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    items.value = await api<InviteItem[]>('/api/invites')
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  items.value = (await res.json()) as InviteItem[]
-  loading.value = false
 }
 
 async function create(role: 'MEMBER' | 'DEPT_LEADER') {
   creating.value = true
   try {
-    const res = await fetch('/api/invites', {
+    const data = await api<{ link: string }>('/api/invites', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ role, expiresInDays: 7, maxUses: 1 }),
     })
-    if (!res.ok) {
-      const body = (await res.json()) as { message?: string }
-      message.error(body.message ?? '创建失败')
-      return
-    }
-    const data = (await res.json()) as { link: string }
     createdLink.value = data.link
     message.success('邀请已创建')
     await load()
+  } catch (e) {
+    message.error((e as Error).message)
   } finally {
     creating.value = false
   }
 }
 
 async function revoke(id: string) {
-  await fetch(`/api/invites/${id}/revoke`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  message.success('已撤销')
-  await load()
+  try {
+    await api(`/api/invites/${id}/revoke`, { method: 'POST' })
+    message.success('已撤销')
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 
 async function copyLink() {

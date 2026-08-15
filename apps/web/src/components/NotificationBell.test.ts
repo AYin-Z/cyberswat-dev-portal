@@ -106,7 +106,8 @@ describe('NotificationBell.vue', () => {
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/notifications/read')
     expect((init as RequestInit).method).toBe('POST')
-    expect((init!.headers as Record<string, string>).Authorization).toBe('Bearer acc-1')
+    // 🔴-4：统一走 api()，headers 为 Headers 实例
+    expect((init!.headers as Headers).get('Authorization')).toBe('Bearer acc-1')
     expect(w.find('.count').exists()).toBe(false) // unread = 0 → 角标隐藏
     expect(w.find('.item.unread').exists()).toBe(false)
   })

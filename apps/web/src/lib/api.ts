@@ -58,9 +58,10 @@ export async function api<T = unknown>(
 
   let res = await fetch(path, { ...options, headers })
 
-  // 401 → 尝试 refresh 续期一次
-  if (res.status === 401 && auth.refreshToken && !options.skipAuth) {
-    const ok = await refreshToken()
+  // 401 → 有 refreshToken 则续期一次并重放；无 refreshToken 或续期失败 → 登出跳登录
+  // （🟡-4 修复：refreshToken 判断移到分支内部，401 一律进入登出流程，不再滞留报错页）
+  if (res.status === 401 && !options.skipAuth) {
+    const ok = auth.refreshToken ? await refreshToken() : false
     if (ok) {
       headers.set('Authorization', `Bearer ${auth.token}`)
       res = await fetch(path, { ...options, headers })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import { NTag, NSpin, NCollapse, NCollapseItem, useMessage } from 'naive-ui'
 
@@ -13,11 +14,13 @@ const registering = ref(false)
 const authorizedClients = ref<{ id: string; name: string; scope: string }[]>([])
 
 async function load() {
-  const res = await fetch('/api/tools', { headers: { Authorization: `Bearer ${auth.token}` } })
-  if (res.ok) {
-    tools.value = (await res.json()) as { id: string; description: string; requiresApproval: boolean }[]
+  try {
+    tools.value = await api<{ id: string; description: string; requiresApproval: boolean }[]>('/api/tools')
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 const origin = window.location.origin

@@ -127,22 +127,20 @@ describe('lib/api.ts', () => {
     expect(getHref()).toBe('/login')
   })
 
-  // ⚠️ 缺陷记录（当前行为，非期望行为）：401 但 refreshToken 为空时，
-  // api.ts:62 的 `auth.refreshToken &&` 条件短路 → 不登出、不跳转，只抛 ApiError。
-  // 影响：GitHub 登录（refreshToken=''）的会话过期后用户停留在报错页，无任何引导。
-  // 期望行为：401 一律登出并跳转 /login。
-  it('401 且无 refreshToken：抛 ApiError 但不登出不跳转（缺陷：应登出）', async () => {
+  // ✅ 🟡-4 修复：401 且 refreshToken 为空（如 GitHub 登录只拿到 access token）时，
+  // 不尝试续期，直接登出并跳转 /login —— 用户不再滞留报错页。
+  it('401 且无 refreshToken：登出并跳转 /login（🟡-4 修复）', async () => {
     const auth = useAuthStore()
     auth.setTokens('only-access', '') // GitHub 登录只拿到 access token
     const getHref = trapLocationHref()
     const fetchMock = vi.fn(async () => jsonResponse({ message: 'Unauthorized' }, 401))
     vi.stubGlobal('fetch', fetchMock)
 
-    const err = (await api('/api/foo').catch((e) => e)) as ApiError
-    expect(err).toBeInstanceOf(ApiError)
-    expect(err.status).toBe(401)
-    expect(auth.token).toBe('only-access') // 未登出 —— 缺陷
-    expect(getHref()).toBe('') // 未跳转 —— 缺陷
+    await expect(api('/api/foo')).rejects.toThrow()
+
+    expect(auth.token).toBe('')
+    expect(auth.refreshToken).toBe('')
+    expect(getHref()).toBe('/login')
   })
 
   it('错误提取：message 字符串 / message 数组取第一条 / fields 透传', async () => {

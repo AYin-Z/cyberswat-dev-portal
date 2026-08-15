@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
 import { NInput, NSelect, NButton, NDatePicker, NModal, NForm, NFormItem, useMessage } from 'naive-ui'
@@ -20,7 +20,6 @@ interface TaskItem {
   submitNote: string | null
 }
 
-const auth = useAuthStore()
 const message = useMessage()
 
 const columns = [
@@ -63,14 +62,18 @@ const colTasksMap = computed(() => {
 const colTasks = (key: string) => colTasksMap.value[key] ?? []
 
 async function load() {
-  const [tRes, mRes, pRes] = await Promise.all([
-    fetch('/api/tasks', { headers: { Authorization: `Bearer ${auth.token}` } }),
-    fetch('/api/members'),
-    fetch('/api/projects', { headers: { Authorization: `Bearer ${auth.token}` } }),
-  ])
-  tasks.value = (await tRes.json()) as TaskItem[]
-  members.value = (await mRes.json()) as { id: string; nickname: string }[]
-  projects.value = (await pRes.json()) as { id: string; name: string }[]
+  try {
+    const [t, m, p] = await Promise.all([
+      api<TaskItem[]>('/api/tasks'),
+      api<{ id: string; nickname: string }[]>('/api/members', { skipAuth: true }),
+      api<{ id: string; name: string }[]>('/api/projects'),
+    ])
+    tasks.value = t
+    members.value = m
+    projects.value = p
+  } catch (e) {
+    error.value = (e as Error).message
+  }
 }
 
 async function move(task: TaskItem, toStatus: string) {
@@ -86,37 +89,35 @@ async function move(task: TaskItem, toStatus: string) {
     message.warning('该状态跳转需走对应操作（认领/提交/验收）')
     return
   }
-  if (action === 'review') {
-    const res = await fetch(`/api/tasks/${task.id}/review`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ approve: true }),
-    })
-    if (!res.ok) return message.error('验收失败（仅创建者可验收）')
-  } else if (action === 'submit') {
-    const note = window.prompt('提交说明（PR 链接/实现简述）：') ?? ''
-    await fetch(`/api/tasks/${task.id}/submit`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note }),
-    })
-  } else {
-    await fetch(`/api/tasks/${task.id}/claim`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${auth.token}` },
-    })
+  // 🟡-6：统一走 api()，失败抛错 → error 提示，不再假成功
+  try {
+    if (action === 'review') {
+      await api(`/api/tasks/${task.id}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ approve: true }),
+      })
+    } else if (action === 'submit') {
+      const note = window.prompt('提交说明（PR 链接/实现简述）：') ?? ''
+      await api(`/api/tasks/${task.id}/submit`, {
+        method: 'POST',
+        body: JSON.stringify({ note }),
+      })
+    } else {
+      await api(`/api/tasks/${task.id}/claim`, { method: 'POST' })
+    }
+    message.success('任务已更新')
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
   }
-  message.success('任务已更新')
-  await load()
 }
 
 async function createTask() {
   if (!newTitle.value.trim()) return
   creating.value = true
   try {
-    const res = await fetch('/api/tasks', {
+    await api('/api/tasks', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: newTitle.value,
         description: newDesc.value || undefined,
@@ -126,10 +127,6 @@ async function createTask() {
         dueAt: newDue.value ? new Date(newDue.value).toISOString() : undefined,
       }),
     })
-    if (!res.ok) {
-      message.error('创建失败（需要部长权限）')
-      return
-    }
     message.success('任务已创建')
     showNew.value = false
     newTitle.value = newDesc.value = ''

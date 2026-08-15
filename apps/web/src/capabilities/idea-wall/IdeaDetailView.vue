@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import StatusBadge from '../../components/StatusBadge.vue'
 import { NTag, NButton, NInput, NSpin, useMessage } from 'naive-ui'
 
@@ -28,7 +28,6 @@ interface IdeaDetail {
   joiners: Joiner[]
 }
 
-const auth = useAuthStore()
 const route = useRoute()
 const message = useMessage()
 const idea = ref<IdeaDetail | null>(null)
@@ -39,31 +38,27 @@ const showJoinForm = ref(false)
 
 async function load() {
   loading.value = true
-  const res = await fetch(`/api/ideas/${route.params.id}`, {
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    idea.value = await api<IdeaDetail>(`/api/ideas/${route.params.id}`)
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  idea.value = (await res.json()) as IdeaDetail
-  loading.value = false
 }
 
 async function join() {
-  const res = await fetch(`/api/ideas/${idea.value!.id}/join`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: joinMessage.value }),
-  })
-  if (!res.ok) {
-    message.error('加入失败')
-    return
+  try {
+    await api(`/api/ideas/${idea.value!.id}/join`, {
+      method: 'POST',
+      body: JSON.stringify({ message: joinMessage.value }),
+    })
+    message.success('已申请加入')
+    showJoinForm.value = false
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
   }
-  message.success('已申请加入')
-  showJoinForm.value = false
-  await load()
 }
 
 onMounted(load)

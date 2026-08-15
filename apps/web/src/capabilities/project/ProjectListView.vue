@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
 import EmptyState from '../../components/EmptyState.vue'
@@ -22,20 +22,18 @@ interface ProjectItem {
   createdAt: string
 }
 
-const auth = useAuthStore()
 const projects = ref<ProjectItem[]>([])
 const error = ref('')
 const loading = ref(true)
 
 async function load() {
-  const res = await fetch('/api/projects', { headers: { Authorization: `Bearer ${auth.token}` } })
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    projects.value = await api<ProjectItem[]>('/api/projects')
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  projects.value = (await res.json()) as ProjectItem[]
-  loading.value = false
 }
 
 onMounted(load)

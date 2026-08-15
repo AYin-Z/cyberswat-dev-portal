@@ -2,6 +2,7 @@
 import { io, type Socket } from 'socket.io-client'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { api } from '../lib/api'
 
 const auth = useAuthStore()
 const unread = ref(0)
@@ -44,9 +45,13 @@ async function toggle() {
 }
 
 async function markAll() {
-  await fetch('/api/notifications/read', { method: 'POST', headers: { Authorization: `Bearer ${auth.token}` } })
-  unread.value = 0
-  list.value = list.value.map((n) => ({ ...n, read: true }))
+  try {
+    await api('/api/notifications/read', { method: 'POST' })
+    unread.value = 0
+    list.value = list.value.map((n) => ({ ...n, read: true }))
+  } catch {
+    /* 静默失败：下轮未读事件会修正状态 */
+  }
 }
 
 onMounted(connect)

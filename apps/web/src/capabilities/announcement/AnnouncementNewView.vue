@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import { NInput, NButton, NSwitch, NForm, NFormItem, useMessage } from 'naive-ui'
 
-const auth = useAuthStore()
 const router = useRouter()
 const message = useMessage()
 
@@ -21,25 +20,18 @@ async function submit() {
   }
   submitting.value = true
   try {
-    const res = await fetch('/api/announcements', {
+    await api('/api/announcements', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${auth.token}`,
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         title: title.value,
         content: content.value,
         important: important.value,
       }),
     })
-    if (!res.ok) {
-      const body = (await res.json()) as { message?: string }
-      message.error(Array.isArray(body.message) ? body.message[0] : (body.message ?? '发布失败'))
-      return
-    }
     message.success('公告已发布')
     router.push('/announcements')
+  } catch (e) {
+    message.error((e as Error).message)
   } finally {
     submitting.value = false
   }

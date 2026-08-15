@@ -11,12 +11,19 @@ const password = ref('')
 const error = ref('')
 const busy = ref(false)
 
+// 🟡-1：登录成功回跳守卫携带的 next（仅允许站内相对路径，防 open redirect）
+function nextPath(): string {
+  const next = route.query.next
+  if (typeof next === 'string' && next.startsWith('/') && !next.startsWith('//')) return next
+  return '/'
+}
+
 async function submit() {
   busy.value = true
   error.value = ''
   try {
     await auth.login(email.value, password.value)
-    router.push('/')
+    router.push(nextPath())
   } catch {
     error.value = '邮箱或密码错误'
   } finally {
@@ -40,7 +47,7 @@ onMounted(() => {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((u) => {
         auth.setUser(u)
-        router.replace('/')
+        router.replace(nextPath())
       })
       .catch(() => {
         error.value = 'GitHub 登录成功但获取用户信息失败，请重新登录'

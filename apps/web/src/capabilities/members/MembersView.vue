@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import { api } from '../../lib/api'
 import { NTag, NSpin } from 'naive-ui'
 
 interface Member {
@@ -20,14 +21,13 @@ const error = ref('')
 const loading = ref(true)
 
 async function load() {
-  const res = await fetch('/api/members')
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    members.value = await api<Member[]>('/api/members', { skipAuth: true })
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  members.value = (await res.json()) as Member[]
-  loading.value = false
 }
 
 const groups = computed(() => {

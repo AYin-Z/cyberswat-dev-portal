@@ -15,17 +15,19 @@ const router = useRouter()
 
 const collapsed = ref(false)
 
-// 菜单：能力包 manifest 注入（ui.menu）+ 固定首页
+// 菜单：能力包 manifest 注入（ui.menu）+ 固定首页；🟡-2 按角色过滤（roles 省略 = 全员可见）
 const menuOptions = computed<MenuOption[]>(() => [
   {
     label: () => h(RouterLink, { to: '/' }, { default: () => '首页' }),
     key: 'home',
     icon: () => h('span', {}, '⌂'),
   },
-  ...ui.menu.map((m) => ({
-    label: () => h(RouterLink, { to: m.path }, { default: () => m.label }),
-    key: m.path,
-  })),
+  ...ui.menu
+    .filter((m) => !m.roles || (auth.user?.role && m.roles.includes(auth.user.role)))
+    .map((m) => ({
+      label: () => h(RouterLink, { to: m.path }, { default: () => m.label }),
+      key: m.path,
+    })),
 ])
 
 // 当前激活菜单

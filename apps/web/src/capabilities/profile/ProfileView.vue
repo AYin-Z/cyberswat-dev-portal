@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import { NInput, NButton, NForm, NFormItem, NSelect, NSwitch, NTag, NSpin, useMessage } from 'naive-ui'
 import type { SelectOption } from 'naive-ui'
@@ -24,34 +25,41 @@ const customSkill = ref('')
 
 async function load() {
   loading.value = true
-  const [meRes, skillsRes] = await Promise.all([
-    fetch('/api/me', { headers: { Authorization: `Bearer ${auth.token}` } }),
-    fetch('/api/skills', { headers: { Authorization: `Bearer ${auth.token}` } }),
-  ])
-  const me = await meRes.json()
-  nickname.value = me.nickname ?? ''
-  grade.value = me.grade ?? ''
-  bio.value = me.bio ?? ''
-  skills.value = me.skills ?? []
-  allowMatch.value = me.allowMatch ?? true
-  links.value = me.links ?? []
+  try {
+    const [me, cats] = await Promise.all([
+      api<{
+        nickname?: string
+        grade?: string
+        bio?: string
+        skills?: string[]
+        allowMatch?: boolean
+        links?: { label: string; url: string }[]
+      }>('/api/me'),
+      api<{ name: string; skills: string[] }[]>('/api/skills'),
+    ])
+    nickname.value = me.nickname ?? ''
+    grade.value = me.grade ?? ''
+    bio.value = me.bio ?? ''
+    skills.value = me.skills ?? []
+    allowMatch.value = me.allowMatch ?? true
+    links.value = me.links ?? []
 
-  const cats = (await skillsRes.json()) as { name: string; skills: string[] }[]
-  skillOptions.value = cats.map((c) => ({
-    type: 'group',
-    label: c.name,
-    key: c.name,
-    options: c.skills.map((s) => ({ label: s, value: s })),
-  }))
-  loading.value = false
+    skillOptions.value = cats.map((c) => ({
+      type: 'group',
+      label: c.name,
+      key: c.name,
+      options: c.skills.map((s) => ({ label: s, value: s })),
+    }))
+  } finally {
+    loading.value = false
+  }
 }
 
 async function save() {
   saving.value = true
   try {
-    const res = await fetch('/api/me', {
+    await api('/api/me', {
       method: 'PATCH',
-      headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nickname: nickname.value,
         grade: grade.value,
@@ -61,13 +69,11 @@ async function save() {
         links: links.value.filter((l) => l.label && l.url),
       }),
     })
-    if (!res.ok) {
-      message.error('保存失败')
-      return
-    }
     // 同步顶部昵称
     auth.user = { ...auth.user!, nickname: nickname.value }
     message.success('资料已保存')
+  } catch (e) {
+    message.error((e as Error).message)
   } finally {
     saving.value = false
   }

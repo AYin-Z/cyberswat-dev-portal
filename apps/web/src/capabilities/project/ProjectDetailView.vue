@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import StatusBadge from '../../components/StatusBadge.vue'
 import { NTag, NSpin, NButton, NProgress, useMessage } from 'naive-ui'
 
@@ -26,41 +27,43 @@ const loading = ref(true)
 
 async function load() {
   loading.value = true
-  const res = await fetch(`/api/projects/${route.params.id}`, {
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  if (!res.ok) {
-    error.value = `加载失败: ${res.status}`
+  try {
+    project.value = await api(`/api/projects/${route.params.id}`)
+  } catch (e) {
+    error.value = `加载失败: ${(e as Error).message}`
+  } finally {
     loading.value = false
-    return
   }
-  project.value = await res.json()
-  loading.value = false
 }
 
+// 🟡-6：写操作统一走 api()，失败抛错 → error 提示，不再假成功
 async function claim(t: TaskItem) {
-  await fetch(`/api/tasks/${t.id}/claim`, { method: 'POST', headers: { Authorization: `Bearer ${auth.token}` } })
-  message.success('已认领')
-  await load()
+  try {
+    await api(`/api/tasks/${t.id}/claim`, { method: 'POST' })
+    message.success('已认领')
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 async function submit(t: TaskItem) {
   const note = window.prompt('提交说明（PR 链接/实现简述）：') ?? ''
-  await fetch(`/api/tasks/${t.id}/submit`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ note }),
-  })
-  message.success('已提交验收')
-  await load()
+  try {
+    await api(`/api/tasks/${t.id}/submit`, { method: 'POST', body: JSON.stringify({ note }) })
+    message.success('已提交验收')
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 async function review(t: TaskItem, approve: boolean) {
-  await fetch(`/api/tasks/${t.id}/review`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ approve }),
-  })
-  message.success(approve ? '已通过' : '已驳回')
-  await load()
+  try {
+    await api(`/api/tasks/${t.id}/review`, { method: 'POST', body: JSON.stringify({ approve }) })
+    message.success(approve ? '已通过' : '已驳回')
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 
 onMounted(load)

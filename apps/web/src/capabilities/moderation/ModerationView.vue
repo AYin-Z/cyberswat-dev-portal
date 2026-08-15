@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
+import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { NDataTable, NButton, NTag, NSpin, useMessage } from 'naive-ui'
@@ -17,7 +17,6 @@ interface ReportItem {
   createdAt: string
 }
 
-const auth = useAuthStore()
 const message = useMessage()
 const reports = ref<ReportItem[]>([])
 const loading = ref(true)
@@ -31,22 +30,23 @@ const typeLabel: Record<string, string> = {
 
 async function load() {
   loading.value = true
-  const res = await fetch('/api/moderation/reports', {
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  if (res.ok) {
-    reports.value = (await res.json()) as ReportItem[]
+  try {
+    reports.value = await api<ReportItem[]>('/api/moderation/reports')
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 async function resolve(id: string, action: 'RESOLVED' | 'DISMISSED') {
-  await fetch(`/api/moderation/reports/${id}?action=${action}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${auth.token}` },
-  })
-  message.success(action === 'RESOLVED' ? '已删除违规内容' : '已忽略')
-  await load()
+  try {
+    await api(`/api/moderation/reports/${id}?action=${action}`, { method: 'POST' })
+    message.success(action === 'RESOLVED' ? '已删除违规内容' : '已忽略')
+    await load()
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 
 const columns: DataTableColumns<ReportItem> = [
