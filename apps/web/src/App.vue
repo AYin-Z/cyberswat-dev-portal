@@ -1,55 +1,188 @@
 <script setup lang="ts">
+import { computed, h, ref } from 'vue'
+import { NConfigProvider, NLayout, NLayoutSider, NLayoutHeader, NLayoutContent, NMenu, NAvatar, NButton, NDropdown, darkTheme, zhCN, dateZhCN } from 'naive-ui'
+import type { MenuOption } from 'naive-ui'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useUiStore } from './stores/ui'
 import { useAuthStore } from './stores/auth'
 import NotificationBell from './components/NotificationBell.vue'
+import { themeOverrides } from './theme'
 
 const ui = useUiStore()
 const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
+
+const collapsed = ref(false)
+
+// 菜单：能力包 manifest 注入（ui.menu）+ 固定首页
+const menuOptions = computed<MenuOption[]>(() => [
+  {
+    label: () => h(RouterLink, { to: '/' }, { default: () => '首页' }),
+    key: 'home',
+    icon: () => h('span', {}, '⌂'),
+  },
+  ...ui.menu.map((m) => ({
+    label: () => h(RouterLink, { to: m.path }, { default: () => m.label }),
+    key: m.path,
+  })),
+])
+
+// 当前激活菜单
+const activeKey = computed(() => {
+  if (route.path === '/') return 'home'
+  const hit = ui.menu.find((m) => route.path.startsWith(m.path))
+  return hit?.path ?? 'home'
+})
+
+// 用户菜单
+const userOptions: MenuOption[] = [
+  { label: '退出登录', key: 'logout' },
+]
+
+function onUserSelect(key: string) {
+  if (key === 'logout') {
+    auth.logout()
+    router.push('/login')
+  }
+}
 </script>
 
 <template>
-  <div class="shell">
-    <header class="topbar">
-      <span class="brand">CYBERSWAT<span class="accent">·DEV</span></span>
-      <nav class="menu">
-        <RouterLink v-for="item in ui.menu" :key="item.path" :to="item.path">
-          {{ item.label }}
-        </RouterLink>
-      </nav>
-      <div class="account">
-        <NotificationBell v-if="auth.isLoggedIn" />
-        <span v-if="auth.user">@{{ auth.user.nickname }}</span>
-        <RouterLink v-else to="/login">登录</RouterLink>
-      </div>
-    </header>
-    <main class="content">
-      <RouterView />
-    </main>
-  </div>
+  <n-config-provider :theme="darkTheme" :theme-overrides="themeOverrides" :locale="zhCN" :date-locale="dateZhCN">
+    <n-layout has-sider class="shell">
+      <!-- 侧边栏 -->
+      <n-layout-sider
+        bordered
+        collapse-mode="width"
+        :collapsed-width="64"
+        :width="220"
+        :collapsed="collapsed"
+        show-trigger="bar"
+        @collapse="collapsed = true"
+        @expand="collapsed = false"
+      >
+        <div class="brand" :class="{ mini: collapsed }">
+          <span class="logo">⬡</span>
+          <span v-if="!collapsed" class="name">CYBERSWAT<span class="dev">·DEV</span></span>
+        </div>
+        <n-menu :options="menuOptions" :value="activeKey" :collapsed="collapsed" :collapsed-width="64" />
+        <div v-if="!collapsed" class="sider-foot">
+          <n-avatar round size="small" class="avatar">{{ (auth.user?.nickname ?? '?').slice(0, 1).toUpperCase() }}</n-avatar>
+          <div class="who">
+            <span class="nick">{{ auth.user?.nickname }}</span>
+            <span class="role">{{ auth.user?.role }}</span>
+          </div>
+        </div>
+      </n-layout-sider>
+
+      <n-layout>
+        <!-- 顶栏 -->
+        <n-layout-header bordered class="topbar">
+          <span class="crumb">{{ route.meta.title ?? '' }}</span>
+          <div class="top-right">
+            <notification-bell v-if="auth.isLoggedIn" />
+            <n-dropdown v-if="auth.isLoggedIn" :options="userOptions" @select="onUserSelect">
+              <n-button quaternary size="small" class="user-btn">
+                <n-avatar round size="small" class="avatar">{{ (auth.user?.nickname ?? '?').slice(0, 1).toUpperCase() }}</n-avatar>
+                <span class="nick">{{ auth.user?.nickname }}</span>
+              </n-button>
+            </n-dropdown>
+            <n-button v-else quaternary size="small" @click="router.push('/login')">登录</n-button>
+          </div>
+        </n-layout-header>
+
+        <!-- 内容区 -->
+        <n-layout-content class="content">
+          <RouterView />
+        </n-layout-content>
+      </n-layout>
+    </n-layout>
+  </n-config-provider>
 </template>
 
-<style>
-:root {
-  --bg: #0d1117;
-  --panel: #161b22;
-  --border: #30363d;
-  --fg: #e6edf3;
-  --muted: #8b949e;
-  --accent: #58a6ff;
+<style scoped>
+.shell {
+  height: 100vh;
 }
-* { box-sizing: border-box; margin: 0; }
-body { background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; }
-.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  height: 56px;
+  border-bottom: 1px solid var(--cs-hairline);
+}
+.brand.mini {
+  padding: 0;
+  justify-content: center;
+}
+.logo {
+  color: var(--cs-accent);
+  font-size: 18px;
+  line-height: 1;
+}
+.name {
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.dev {
+  color: var(--cs-accent);
+}
+.sider-foot {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--cs-hairline);
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.nick {
+  font-size: 13px;
+  color: var(--cs-ink);
+}
+.role {
+  font-size: 11px;
+  color: var(--cs-ink-subtle);
+}
 .topbar {
-  display: flex; align-items: center; gap: 24px;
-  padding: 12px 24px; border-bottom: 1px solid var(--border);
-  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
 }
-.brand { font-weight: 700; letter-spacing: 1px; }
-.accent { color: var(--accent); }
-.menu { display: flex; gap: 16px; flex: 1; }
-.menu a { color: var(--muted); text-decoration: none; font-size: 14px; }
-.menu a.router-link-active { color: var(--fg); }
-.account a { color: var(--accent); text-decoration: none; }
-.content { flex: 1; padding: 24px; max-width: 1080px; margin: 0 auto; width: 100%; }
+.crumb {
+  font-size: 13px;
+  color: var(--cs-ink-subtle);
+}
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.avatar {
+  background: var(--cs-surface-3);
+  color: var(--cs-ink-muted);
+  font-size: 12px;
+}
+.content {
+  padding: 24px;
+  max-width: 1200px;
+}
 </style>
