@@ -40,9 +40,8 @@ export class McpModule implements OnApplicationBootstrap {
     const publicUrl = process.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8093'
     const base = new URL(publicUrl.endsWith('/') ? publicUrl : `${publicUrl}/`)
 
-    // OAuth 2.1 路由（DCR/authorize/token/revoke/metadata）
+    // OAuth 2.1 路由（SDK 要求挂根：/authorize /token /register /revoke + metadata）
     app.use(
-      '/oauth',
       mcpAuthRouter({
         provider: this.provider,
         issuerUrl: base,
