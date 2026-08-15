@@ -1,10 +1,13 @@
 /**
  * TaskBoardView.vue 交互测试 — 任务看板
  * 覆盖：
- *  1. 拖拽事件绑定（@end 触发源列 → 期望真实流转，当前代码失败 = 复现 🟡-6 未修复）
- *  2. 目标列触发（修复方向）→ move 状态机 claim/submit/review 分支
- *  3. 非法跳转 → message.warning
- *  4. 新任务弹窗表单 → POST /api/tasks
+ *  1. 拖拽事件绑定：Sortable.js 的 end 只派发到源列，handler 用 e.from/e.to 的
+ *     data-col 判定真实目标列（🔴-3 修复）→ move 状态机 claim/submit/review 分支
+ *  2. 非法跳转 → message.warning（不请求 API）
+ *  3. 新任务弹窗表单 → POST /api/tasks
+ *
+ * 事件载荷按真实 Sortable.js 结构构造：evt.item/evt.from/evt.to 都是 DOM 元素，
+ * 分别携带 :data-id（卡片）与 :data-col（列容器）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
@@ -95,45 +98,53 @@ describe('TaskBoardView.vue', () => {
     expect(counts[3].text()).toBe('0')
   })
 
-  it('🔴 复现：看板卡片不渲染（vue-draggable-next #item 槽无效，预期失败）', async () => {
-    // TaskBoardView.vue:159-186 使用 <template #item="{ element }"> 渲染卡片，
-    // 但 vue-draggable-next@2.3.0 官方 dist 的 render() 只输出默认槽内容
+  it('回归：看板卡片正常渲染（默认槽 + v-for，修复 #item 槽无效问题）', async () => {
+    // 🔴-2 修复：vue-draggable-next@2.3.0 官方 dist 的 render() 只输出默认槽内容
     // （dist/vue-draggable-next.esm-bundler.js:3414-3425，README 与产物不一致）
-    // → 卡片内容从未渲染，看板四列全空（渲染逻辑与 DOM 无关，生产同样为空）。
-    // 已单独验证：#item 槽 → 0 卡片；默认槽 + v-for → 正常渲染。
+    // → 改用默认槽 + v-for 渲染卡片。
     const w = mountBoard(vi.fn())
     await flushPromises()
-    expect(w.findAll('.card').length).toBeGreaterThan(0) // ← 当前恒为 0 → 本用例失败
+    expect(w.findAll('.card').length).toBeGreaterThan(0)
   })
 
   // ============ 拖拽交互 ============
 
-  it('🔴 复现 🟡-6：拖拽 TODO→IN_PROGRESS 后 @end 在源列触发 → claim 从未被调用（预期失败）', async () => {
-    // Sortable.js 的 end 事件只派发到“拖拽起始列”的 draggable（源码 onEnd 绑定在源 sortable），
-    // 而 handler 里 col.key 就是源列 → `t.status !== col.key` 恒为 false → move() 永不执行。
-    // 这是当前实际代码的行为：拖拽后任务状态不落库、刷新即还原。
+  // Sortable.js 的 end 事件只派发到“拖拽起始列”的 draggable（源码 onEnd 绑定在源 sortable），
+  // 且 evt.from/evt.to 是列容器 DOM 元素（带 :data-col），evt.item 是卡片 DOM 元素（带 :data-id）。
+  // 🔴-3 修复：handler 不再依赖触发组件所在列，改用 e.from/e.to 的 data-col 判定真实目标列。
+
+  it('拖拽 TODO→IN_PROGRESS：end 在源列触发（真实行为）→ claim 被调用', async () => {
     const fetchMock = vi.fn()
     const w = mountBoard(fetchMock)
     await flushPromises()
 
     const cols = w.findAllComponents(draggable)
     expect(cols.length).toBeGreaterThanOrEqual(4)
-    const todoCol = cols[0] // 源列（TODO）
-    await todoCol.vm.$emit('end', { item: { dataset: { id: 't1' } }, to: {}, from: {} })
+    const todoCol = cols[0] // 源列（TODO）——真实 Sortable.js 在此派发 end
+    await todoCol.vm.$emit('end', {
+      item: { dataset: { id: 't1' } },
+      from: { dataset: { col: 'TODO' } },
+      to: { dataset: { col: 'IN_PROGRESS' } },
+    })
     await flushPromises()
 
     const claimCall = fetchMock.mock.calls.find((c) => String(c[0]).includes('/api/tasks/t1/claim'))
-    expect(claimCall).toBeTruthy() // ← 期望：拖拽应触发认领流转；当前代码不触发 → 本用例失败
+    expect(claimCall).toBeTruthy()
+    expect((claimCall![1] as RequestInit).method).toBe('POST')
   })
 
-  it('修复方向验证：若 end 在目标列触发，claim 分支可正常工作（TODO→IN_PROGRESS）', async () => {
+  it('拖拽 TODO→IN_PROGRESS：即使 end 在目标列组件上触发，from/to 判定同样生效', async () => {
     const fetchMock = vi.fn()
     const w = mountBoard(fetchMock)
     await flushPromises()
 
     const cols = w.findAllComponents(draggable)
-    const inProgressCol = cols[1] // 模拟“目标列”触发
-    await inProgressCol.vm.$emit('end', { item: { dataset: { id: 't1' } }, to: {}, from: {} })
+    const inProgressCol = cols[1] // 目标列（IN_PROGRESS）
+    await inProgressCol.vm.$emit('end', {
+      item: { dataset: { id: 't1' } },
+      from: { dataset: { col: 'TODO' } },
+      to: { dataset: { col: 'IN_PROGRESS' } },
+    })
     await flushPromises()
 
     const claimCall = fetchMock.mock.calls.find((c) => String(c[0]).includes('/api/tasks/t1/claim'))
@@ -143,18 +154,24 @@ describe('TaskBoardView.vue', () => {
 
   it('状态机：IN_PROGRESS→REVIEW 触发 submit 分支（提交说明走 window.prompt）', async () => {
     const fetchMock = vi.fn()
+    vi.spyOn(window, 'prompt').mockReturnValue('PR #42')
     const w = mountBoard(fetchMock)
     await flushPromises()
 
     const cols = w.findAllComponents(draggable)
     const reviewCol = cols[2]
-    await reviewCol.vm.$emit('end', { item: { dataset: { id: 't2' } }, to: {}, from: {} })
+    await reviewCol.vm.$emit('end', {
+      item: { dataset: { id: 't2' } },
+      from: { dataset: { col: 'IN_PROGRESS' } },
+      to: { dataset: { col: 'REVIEW' } },
+    })
     await flushPromises()
 
     const submitCall = fetchMock.mock.calls.find((c) => String(c[0]).includes('/api/tasks/t2/submit'))
     expect(submitCall).toBeTruthy()
     const body = JSON.parse(String((submitCall![1] as RequestInit).body))
     expect(body).toHaveProperty('note')
+    expect(body.note).toBe('PR #42')
   })
 
   it('状态机：REVIEW→DONE 触发 review 分支（approve: true）', async () => {
@@ -164,7 +181,11 @@ describe('TaskBoardView.vue', () => {
 
     const cols = w.findAllComponents(draggable)
     const doneCol = cols[3]
-    await doneCol.vm.$emit('end', { item: { dataset: { id: 't3' } }, to: {}, from: {} })
+    await doneCol.vm.$emit('end', {
+      item: { dataset: { id: 't3' } },
+      from: { dataset: { col: 'REVIEW' } },
+      to: { dataset: { col: 'DONE' } },
+    })
     await flushPromises()
 
     const reviewCall = fetchMock.mock.calls.find((c) => String(c[0]).includes('/api/tasks/t3/review'))
@@ -179,7 +200,11 @@ describe('TaskBoardView.vue', () => {
 
     const cols = w.findAllComponents(draggable)
     const doneCol = cols[3]
-    await doneCol.vm.$emit('end', { item: { dataset: { id: 't1' } }, to: {}, from: {} })
+    await doneCol.vm.$emit('end', {
+      item: { dataset: { id: 't1' } },
+      from: { dataset: { col: 'TODO' } },
+      to: { dataset: { col: 'DONE' } },
+    })
     await flushPromises()
 
     expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/tasks/t1'))).toBe(false)

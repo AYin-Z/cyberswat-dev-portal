@@ -115,6 +115,7 @@ onMounted(load)
           filterable
           tag
           :options="skillOptions"
+          :children-field="'options'"
           placeholder="从分类中选择，或输入自定义标签"
           class="full"
         />

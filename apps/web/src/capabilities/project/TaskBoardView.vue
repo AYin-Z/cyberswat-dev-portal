@@ -75,10 +75,12 @@ async function load() {
 
 async function move(task: TaskItem, toStatus: string) {
   if (task.status === toStatus) return
-  // 通过状态流转 API 移动（接单/提交/验收语义由后端校验）
-  const action = task.status === 'TODO' && toStatus === 'IN_PROGRESS' ? 'claim'
-    : task.status === 'IN_PROGRESS' && toStatus === 'REVIEW' ? 'submit'
-    : task.status === 'REVIEW' && toStatus === 'DONE' ? 'review'
+  // 🔴-3：按状态机映射动作（拖拽跳列时顺延流转）
+  const flow: Record<string, string> = { TODO: 'IN_PROGRESS', IN_PROGRESS: 'REVIEW', REVIEW: 'DONE' }
+  const action = flow[task.status] === toStatus
+    ? task.status === 'TODO' ? 'claim'
+      : task.status === 'IN_PROGRESS' ? 'submit'
+      : 'review'
     : null
   if (!action) {
     message.warning('该状态跳转需走对应操作（认领/提交/验收）')
@@ -162,25 +164,35 @@ onMounted(load)
           item-key="id"
           class="col-body"
           :animation="150"
+          :data-col="col.key"
           @end="(e: any) => {
-            // 🟡-6：vue-draggable 修改的是 colTasks 的临时数组；从 dataset 恢复真实任务并流转
+            // 🔴-3：end 事件只派发到源列——用 e.from/e.to 的 data-col 判定真实目标列
+            const fromCol = e.from?.dataset?.col
+            const toCol = e.to?.dataset?.col
+            const target = toCol || fromCol
             const id = e.item?.dataset?.id
             const t = tasks.find((x) => x.id === id)
-            if (t && t.status !== col.key) move(t, col.key)
+            if (t && target && t.status !== target) move(t, target)
           }"
         >
-          <template #item="{ element }">
-            <div class="card" :data-id="element.id" :class="`pri-${element.priority.toLowerCase()}`">
+          <template #default>
+            <div
+              v-for="el in colTasks(col.key)"
+              :key="el.id"
+              class="card"
+              :data-id="el.id"
+              :class="`pri-${el.priority.toLowerCase()}`"
+            >
               <div class="card-top">
-                <status-badge :status="element.priority" type="priority" />
-                <span v-if="element.projectName" class="proj">{{ element.projectName }}</span>
+                <status-badge :status="el.priority" type="priority" />
+                <span v-if="el.projectName" class="proj">{{ el.projectName }}</span>
               </div>
-              <p class="t-title">{{ element.title }}</p>
+              <p class="t-title">{{ el.title }}</p>
               <p class="t-meta">
-                指派：{{ element.assignee?.nickname ?? '未指派' }}
-                <template v-if="element.dueAt">· {{ element.dueAt.slice(0, 10) }}</template>
+                指派：{{ el.assignee?.nickname ?? '未指派' }}
+                <template v-if="el.dueAt">· {{ el.dueAt.slice(0, 10) }}</template>
               </p>
-              <p v-if="element.submitNote" class="t-note">📎 {{ element.submitNote }}</p>
+              <p v-if="el.submitNote" class="t-note">📎 {{ el.submitNote }}</p>
             </div>
           </template>
         </draggable>
