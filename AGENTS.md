@@ -73,7 +73,8 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
 - [x] 全功能端到端线上验证（2026-08-15）
 
 ## 待办（下一轮迭代）
-- [ ] 更换生产 JWT_SECRET / DB 密码（当前是 dev 值，正式对外前必须做）
+- 迭代计划：docs/ITERATION-R1.md（成员体验打磨，4 交付 + 1 安全必做）；体系愿景见主仓库 docs/VISION.md
+- [ ] R1-P1 个人资料编辑页 / R1-P2 成员项目经历 / R1-P3 通知中心 UI / R1-P4 体验小修 / R1-S1 生产凭证更换
 - [x] GitHub OAuth 配置（2026-08-15）：OAuth App 已创建（CyberSWAT 开发部子站，回调 https://dev.cyberswat.cn/api/auth/github/callback），
   凭据存 ~/.cyberswat-dev-prod.env（权限 600，不入库），容器 --env-file 注入
   - 授权链路已验证：/api/auth/github/login → 302 github.com 授权页（client_id 正确），本地+线上均通
