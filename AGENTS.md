@@ -77,7 +77,7 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
 - [x] GitHub OAuth 配置（2026-08-15）：OAuth App 已创建（CyberSWAT 开发部子站，回调 https://dev.cyberswat.cn/api/auth/github/callback），
   凭据存 ~/.cyberswat-dev-prod.env（权限 600，不入库），容器 --env-file 注入
   - 授权链路已验证：/api/auth/github/login → 302 github.com 授权页（client_id 正确），本地+线上均通
-  - 浏览器完整流程待人工点验（登录页"使用 GitHub 登录"按钮）
+  - ✅ 浏览器全流程点验通过（2026-08-15）：GitHub 登录 → 自动建号（AYin-Z → Ayin, MEMBER, githubId 绑定落库）
 - [ ] 个人资料编辑页（年级/技能/签名/links 维护）—— 数据模型已就绪（core_users）
 - [ ] 部门 agent v0（后台 agent：事件订阅 + 工具调用 + 草稿态写操作）—— L1 路线
 - [ ] 招新页（成员主页"加入我们"入口）—— Vidar 的 Join us 模式
