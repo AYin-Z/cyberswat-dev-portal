@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUiStore } from './stores/ui'
 import { useAuthStore } from './stores/auth'
+import NotificationBell from './components/NotificationBell.vue'
 
 const ui = useUiStore()
 const auth = useAuthStore()
@@ -16,6 +17,7 @@ const auth = useAuthStore()
         </RouterLink>
       </nav>
       <div class="account">
+        <NotificationBell v-if="auth.isLoggedIn" />
         <span v-if="auth.user">@{{ auth.user.nickname }}</span>
         <RouterLink v-else to="/login">登录</RouterLink>
       </div>

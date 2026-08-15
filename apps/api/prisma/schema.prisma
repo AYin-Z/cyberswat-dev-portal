@@ -37,6 +37,15 @@ model CoreUser {
   announcementReads AnnouncementRead[]
   ideas           Idea[]         @relation("IdeaAuthor")
   ideaJoins       IdeaJoiner[]
+  projects        Project[]      @relation("ProjectLead")
+  projectMembers  ProjectMember[]
+  assignedTasks   Task[]         @relation("TaskAssignee")
+  createdTasks    Task[]         @relation("TaskCreator")
+  posts           Post[]         @relation("PostAuthor")
+  postComments    PostComment[]
+  postLikes       PostLike[]
+  notifications   Notification[]
+  mentions        NotificationMention[]
 
   @@map("core_users")
 }
@@ -190,4 +199,169 @@ model IdeaJoiner {
 
   @@unique([ideaId, userId])
   @@map("idea_wall_joiners")
+}
+
+// ============ 项目能力包（project_，dbNamespace: project） ============
+
+enum ProjectStatus {
+  ACTIVE   // 进行中
+  PAUSED   // 暂停
+  DONE     // 已完成
+  ARCHIVED // 已归档
+}
+
+enum TaskStatus {
+  TODO      // 待接单
+  IN_PROGRESS // 进行中
+  REVIEW    // 待验收
+  DONE      // 已完成
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+/// 项目 — 点子转正后的正式形态（OSPP 卡片模板：名称/描述/难度/技术栈/负责人/状态）
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  description String
+  difficulty  String? // 难度分级：入门/进阶/挑战
+  techStack   String[]      @default([])
+  status      ProjectStatus @default(ACTIVE)
+  // 人力需求（转正时从点子带过来）
+  needPeople  String?
+  leadId      String // 项目负责人（部长指派或点子发起人）
+  lead        CoreUser      @relation("ProjectLead", fields: [leadId], references: [id])
+  // 从点子转正而来（可选）
+  ideaId      String?       @unique
+  members     ProjectMember[]
+  tasks       Task[]
+  repoUrl     String? // 成果仓库
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status])
+  @@map("project_projects")
+}
+
+/// 项目成员（认领/加入项目）
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      CoreUser @relation(fields: [userId], references: [id])
+  role      String   @default("MEMBER") // LEAD / MEMBER
+  joinedAt  DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+/// 任务 — 指派→接单→提交→验收闭环（信息流转三件套之"任务执行"）
+model Task {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueAt       DateTime? // 截止时间
+  projectId   String?
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assigneeId  String? // 被指派人
+  assignee    CoreUser?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creatorId   String // 创建者（部长/负责人）
+  creator     CoreUser     @relation("TaskCreator", fields: [creatorId], references: [id])
+  submitNote  String? // 提交说明（验收信息）
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status, assigneeId])
+  @@index([projectId])
+  @@map("project_tasks")
+}
+
+// ============ 社区能力包（community_，dbNamespace: community） ============
+
+enum PostBoard {
+  GENERAL // 灌水
+  HELP    // 求助
+  SHARE   // 分享
+  RECRUIT // 招人
+}
+
+/// 帖子 — 轻量社区（PRD 构思 #6：帖子+评论+点赞+@通知）
+model Post {
+  id        String    @id @default(uuid())
+  board     PostBoard @default(GENERAL)
+  title     String
+  content   String
+  authorId  String
+  author    CoreUser  @relation("PostAuthor", fields: [authorId], references: [id])
+  comments  PostComment[]
+  likes     PostLike[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([board, createdAt])
+  @@map("community_posts")
+}
+
+model PostComment {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    CoreUser @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+  @@map("community_comments")
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      CoreUser @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@map("community_likes")
+}
+
+/// 通知中心 — @提及/任务/公告/点子 全量站内通知
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String // 接收者
+  user      CoreUser  @relation(fields: [userId], references: [id])
+  type      String // mention / task / announcement / idea / system
+  title     String
+  content   String?
+  link      String? // 前端路由，如 /posts/xxx
+  read      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([userId, read, createdAt])
+  @@map("core_notifications")
+}
+
+/// @提及记录 — 帖子/评论中的 @昵称 解析结果
+model NotificationMention {
+  id        String   @id @default(uuid())
+  postId    String?
+  commentId String?
+  mentionedUserId String
+  mentionedUser   CoreUser @relation(fields: [mentionedUserId], references: [id])
+  byUserId  String
+  createdAt DateTime @default(now())
+
+  @@index([mentionedUserId, createdAt])
+  @@map("core_mentions")
 }

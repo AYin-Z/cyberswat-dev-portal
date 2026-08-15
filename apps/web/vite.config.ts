@@ -19,6 +19,12 @@ export default defineConfig({
         target: 'http://127.0.0.1:8093',
         changeOrigin: true,
       },
+      // socket.io 实时通道
+      '/socket.io': {
+        target: 'http://127.0.0.1:8093',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
 })

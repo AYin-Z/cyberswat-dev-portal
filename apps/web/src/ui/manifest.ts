@@ -9,5 +9,15 @@ import { announcementUi } from '../capabilities/announcement/announcement.ui'
 import { invitesUi } from '../capabilities/invites/invites.ui'
 import { ideaUi } from '../capabilities/idea-wall/idea.ui'
 import { membersUi } from '../capabilities/members/members.ui'
+import { projectUi } from '../capabilities/project/project.ui'
+import { communityUi } from '../capabilities/community/community.ui'
 
-export const uiContributions: UiContribution[] = [exampleUi, announcementUi, invitesUi, ideaUi, membersUi]
+export const uiContributions: UiContribution[] = [
+  exampleUi,
+  announcementUi,
+  invitesUi,
+  ideaUi,
+  membersUi,
+  projectUi,
+  communityUi,
+]

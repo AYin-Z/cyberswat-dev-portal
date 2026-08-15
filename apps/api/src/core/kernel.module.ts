@@ -9,12 +9,16 @@ import { ToolRegistry, type ToolCallContext } from './tools/tool.registry'
 import { AuthModule } from './auth/auth.module'
 import { UsersModule } from './users/users.module'
 import { InvitesModule } from './invites/invites.module'
+import { NotificationsModule } from './notifications/notifications.module'
+import { GatewayModule } from './gateway/gateway.module'
 import { InviteService } from './invites/invite.service'
 import { HealthController } from './health.controller'
 // 能力包（插件行）：新增能力包时在此追加 import + imports
 import { ExampleModule } from '../capabilities/example/example.module'
 import { AnnouncementModule } from '../capabilities/announcement/announcement.module'
 import { IdeaModule } from '../capabilities/idea-wall/idea.module'
+import { ProjectModule } from '../capabilities/project/project.module'
+import { CommunityModule } from '../capabilities/community/community.module'
 
 /**
  * 内核 Kernel — 稳定骨架，不是插件。
@@ -31,13 +35,17 @@ import { IdeaModule } from '../capabilities/idea-wall/idea.module'
     AuthModule,
     UsersModule,
     InvitesModule,
+    NotificationsModule,
+    GatewayModule,
     // —— 能力包装配区 ——
     ExampleModule,
     AnnouncementModule,
     IdeaModule,
+    ProjectModule,
+    CommunityModule,
   ],
   controllers: [HealthController],
-  exports: [PluginsModule, PermissionsModule, EventsModule, ToolsModule, AuthModule, UsersModule, InvitesModule],
+  exports: [PluginsModule, PermissionsModule, EventsModule, ToolsModule, AuthModule, UsersModule, InvitesModule, NotificationsModule],
 })
 export class KernelModule implements OnModuleInit {
   constructor(
@@ -51,6 +59,7 @@ export class KernelModule implements OnModuleInit {
     this.permissions.registerMany([
       { id: 'invite.create', description: '创建成员邀请', defaultRoles: ['dept-leader', 'admin'] },
       { id: 'invite.list', description: '查看/撤销邀请', defaultRoles: ['dept-leader', 'admin'] },
+      { id: 'notification.view', description: '查看通知', defaultRoles: ['member', 'dept-leader', 'admin'] },
     ])
 
     // agent 开邀请 = 拉人进系统，危险操作 → 需部长审批
