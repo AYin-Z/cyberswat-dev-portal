@@ -25,8 +25,9 @@ CyberSWAT 网络特警队开发部子站（dev.cyberswat.cn），插件化架构
 - [x] M0: 仓库 + monorepo 骨架 + 内核（插件注册表/权限点/事件总线/工具注册表/认证占位）
 - [x] M1a: Prisma 落库（PostgreSQL 16 容器 5433）+ bcrypt 认证 + GitHub OAuth（代码就绪，client id/secret 待填）
 - [x] M1b: 公告能力包（发布/已读追踪/重要确认/部长名单/agent 工具带审批）
-- [ ] M1c: 邀请激活 + refresh token 轮换
-- [ ] M2: 点子墙 + 成员主页（Vidar 卡片）
-- [ ] M3: 任务分派 + 点子孵化
+- [x] M1c: 邀请制成员生命周期 + refresh token 轮换
+- [x] M2a: 点子墙能力包（发布/招募/加入/状态流转/转正预留 + agent 工具）
+- [x] M2b: 成员主页（Vidar 卡片，脱敏）
+- [ ] M3: 任务分派 + 点子孵化（项目表 + 转正关联）
 - [ ] M4: 轻量社区（socket.io 通知）
 - [ ] M5: 上线 dev.cyberswat.cn（容器 + ingress + CNAME）

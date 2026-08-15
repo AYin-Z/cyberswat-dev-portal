@@ -7,5 +7,7 @@ import type { UiContribution } from './contribution'
 import { exampleUi } from '../capabilities/example/example.ui'
 import { announcementUi } from '../capabilities/announcement/announcement.ui'
 import { invitesUi } from '../capabilities/invites/invites.ui'
+import { ideaUi } from '../capabilities/idea-wall/idea.ui'
+import { membersUi } from '../capabilities/members/members.ui'
 
-export const uiContributions: UiContribution[] = [exampleUi, announcementUi, invitesUi]
+export const uiContributions: UiContribution[] = [exampleUi, announcementUi, invitesUi, ideaUi, membersUi]

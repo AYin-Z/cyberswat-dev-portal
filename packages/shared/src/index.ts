@@ -120,6 +120,7 @@ export type CoreEventMap = {
   'tool.approval.resolved': { recordId: string; approved: boolean }
   'announcement.published': { announcementId: string; title: string }
   'task.status.changed': { taskId: string; from: string; to: string }
+  'idea.created': { ideaId: string }
   'idea.promoted': { ideaId: string; projectId: string }
   'post.mentioned': { postId: string; mentionedUserIds: string[] }
 }

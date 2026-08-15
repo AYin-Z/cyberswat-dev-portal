@@ -35,6 +35,8 @@ model CoreUser {
 
   announcements   Announcement[] @relation("AnnouncementAuthor")
   announcementReads AnnouncementRead[]
+  ideas           Idea[]         @relation("IdeaAuthor")
+  ideaJoins       IdeaJoiner[]
 
   @@map("core_users")
 }
@@ -146,4 +148,46 @@ model AnnouncementRead {
 
   @@unique([announcementId, userId])
   @@map("announcement_reads")
+}
+
+// ============ 点子墙能力包（idea_wall_，dbNamespace: idea_wall） ============
+
+enum IdeaStatus {
+  RECRUITING // 招募中（等成员加入）
+  INCUBATING // 孵化中（有人加入，讨论推进）
+  PROMOTED   // 已转正为正式项目（M3 关联项目表）
+  ARCHIVED   // 已废弃
+}
+
+/// 点子墙 — 有想法但缺人力/技术/资源 → 发布点子招募成员（PRD 构思 #4）
+model Idea {
+  id          String     @id @default(uuid())
+  title       String
+  description String // 痛点/想法/预想方案
+  need        String // 缺什么：人力/技术力/资源（自由文本，如 "缺 1 个会 Vue 的前端"）
+  techStack   String[]   @default([]) // 技术栈标签
+  status      IdeaStatus @default(RECRUITING)
+  authorId    String
+  author      CoreUser   @relation("IdeaAuthor", fields: [authorId], references: [id])
+  joiners     IdeaJoiner[]
+  promotedProjectId String? // 转正后的项目 id（M3 建项目表后关联）
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status, createdAt])
+  @@map("idea_wall_ideas")
+}
+
+/// 认领/加入 — "点子→人力"连接机制：成员申请加入，发起人看到人力需求被响应
+model IdeaJoiner {
+  id        String   @id @default(uuid())
+  ideaId    String
+  idea      Idea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      CoreUser @relation(fields: [userId], references: [id])
+  message   String? // 加入留言（我能做什么/我的技能）
+  createdAt DateTime @default(now())
+
+  @@unique([ideaId, userId])
+  @@map("idea_wall_joiners")
 }
