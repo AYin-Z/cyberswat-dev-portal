@@ -143,6 +143,7 @@ model Announcement {
   updatedAt   DateTime  @updatedAt
 
   @@index([publishedAt])
+  @@index([authorId])
   @@map("announcement_announcements")
 }
 
@@ -246,6 +247,7 @@ model Project {
   updatedAt   DateTime      @updatedAt
 
   @@index([status])
+  @@index([leadId])
   @@map("project_projects")
 }
 
@@ -283,6 +285,7 @@ model Task {
 
   @@index([status, assigneeId])
   @@index([projectId])
+  @@index([creatorId])
   @@map("project_tasks")
 }
 
@@ -301,6 +304,8 @@ model Post {
   board     PostBoard @default(GENERAL)
   title     String
   content   String
+  deletedAt DateTime? // 🟡-21: 软删除时间
+  authorViaAgent Boolean @default(false) // 🟡-11: AI 代发标识（原文保留，仅查询过滤）
   authorId  String
   author    CoreUser  @relation("PostAuthor", fields: [authorId], references: [id])
   comments  PostComment[]
@@ -309,6 +314,7 @@ model Post {
   updatedAt DateTime  @updatedAt
 
   @@index([board, createdAt])
+  @@index([authorId])
   @@map("community_posts")
 }
 
@@ -319,9 +325,12 @@ model PostComment {
   authorId  String
   author    CoreUser @relation(fields: [authorId], references: [id])
   content   String
+  deletedAt DateTime? // 🟡-21: 软删除时间
+  authorViaAgent Boolean @default(false) // 🟡-11: AI 代发标识
   createdAt DateTime @default(now())
 
   @@index([postId, createdAt])
+  @@index([authorId])
   @@map("community_comments")
 }
 

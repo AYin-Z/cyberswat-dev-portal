@@ -11,7 +11,13 @@ WORKDIR /app
 COPY deploy/api /app
 
 ENV NODE_ENV=production
-EXPOSE 8093
+EXPOSE 8093 8094
+
+# 🟢-2：非 root 运行
+RUN chown -R node:node /app
+USER node
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD node -e "fetch('http://127.0.0.1:8093/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" || exit 1
 
 # 启动：先跑迁移（幂等），再起服务
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

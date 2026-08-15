@@ -21,7 +21,7 @@ services:
     container_name: cyberswat-dev-api
     restart: unless-stopped
     environment:
-      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET 必须设置}
       - DATABASE_URL=postgresql://cyberswat:cyberswat@dev-db:5432/cyberswat_dev?schema=public
       - API_PORT=8093
       - FRONTEND_ORIGIN=https://dev.cyberswat.cn
@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
     environment:
       - POSTGRES_USER=cyberswat
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-cyberswat}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD 必须设置}
       - POSTGRES_DB=cyberswat_dev
     volumes:
       - cyberdev-pgdata:/var/lib/postgresql/data

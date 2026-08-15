@@ -116,7 +116,7 @@ onMounted(load)
         <div v-for="c in post.comments" :key="c.id" class="c">
           <p class="c-meta">
             {{ c.author.nickname }}
-            <span v-if="c.content.includes('🤖')" class="ai-badge">🤖 AI 代发</span>
+            <span v-if="c.authorViaAgent" class="ai-badge">🤖 AI 代发</span>
             · {{ c.createdAt.slice(0, 16).replace('T', ' ') }}
           </p>
           <p class="c-content">{{ c.content }}</p>

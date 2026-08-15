@@ -18,10 +18,18 @@ function connect() {
   sock.on('notification:unread', (d: { count: number }) => {
     unread.value = d.count
   })
-  sock.on('notification:new', (d: { type: string; title: string; link?: string }) => {
+  sock.on('notification:new', (d: { id?: string; type: string; title: string; content?: string | null; link?: string | null; read?: boolean; createdAt?: string }) => {
     unread.value += 1
-    list.value.unshift({ id: `live-${Date.now()}`, type: d.type, title: d.title, content: null, link: d.link ?? null, read: false, createdAt: new Date().toISOString() })
-    if (d.link) location.hash = d.link
+    list.value.unshift({
+      id: d.id ?? `live-${Date.now()}`,
+      type: d.type,
+      title: d.title,
+      content: d.content ?? null,
+      link: d.link ?? null,
+      read: d.read ?? false,
+      createdAt: d.createdAt ?? new Date().toISOString(),
+    })
+    // 🟡-8：通知不强制改 URL（仅提供跳转链接）
   })
   sock.on('notification:list', (rows: typeof list.value) => {
     list.value = rows
@@ -55,7 +63,7 @@ onBeforeUnmount(() => sock?.disconnect())
         <span>通知</span>
         <button class="clear" @click="markAll">全部已读</button>
       </div>
-      <div v-for="n in list" :key="n.id" class="item" :class="{ unread: !n.read }">
+      <div v-for="n in list" :key="n.id" class="item" :class="{ unread: !n.read }" @click="n.link && $router.push(n.link)">
         <p class="n-title">{{ n.title }}</p>
         <p v-if="n.content" class="n-content">{{ n.content }}</p>
         <p class="n-meta">{{ n.type }} · {{ n.createdAt.slice(0, 16).replace('T', ' ') }}</p>

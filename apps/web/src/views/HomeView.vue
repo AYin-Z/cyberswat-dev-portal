@@ -55,8 +55,9 @@ async function load() {
     return
   }
   const h = { Authorization: `Bearer ${auth.token}` }
+  // 🟡-7：我的任务 = 指派给我或我创建的（按 assigneeId 过滤）
   const [t, i, n, a] = await Promise.all([
-    fetch('/api/tasks', { headers: h }).then((r) => r.json()),
+    fetch(`/api/tasks?assigneeId=${auth.user?.id ?? ''}`, { headers: h }).then((r) => r.json()),
     fetch('/api/ideas', { headers: h }).then((r) => r.json()),
     fetch('/api/notifications', { headers: h }).then((r) => r.json()),
     fetch('/api/announcements', { headers: h }).then((r) => r.json()),

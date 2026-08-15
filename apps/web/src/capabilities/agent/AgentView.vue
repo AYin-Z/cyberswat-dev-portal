@@ -9,6 +9,8 @@ const message = useMessage()
 const tools = ref<{ id: string; description: string; requiresApproval: boolean }[]>([])
 const loading = ref(true)
 const copied = ref('')
+const registering = ref(false)
+const authorizedClients = ref<{ id: string; name: string; scope: string }[]>([])
 
 async function load() {
   const res = await fetch('/api/tools', { headers: { Authorization: `Bearer ${auth.token}` } })
@@ -57,7 +59,107 @@ async function copy(key: string) {
   }
 }
 
-onMounted(load)
+async function startAuth() {
+  // 🟡-3：先 DCR 注册客户端 → 再跳授权页（授权完成后在 callback 页面完成）
+  registering.value = true
+  try {
+    const res = await fetch(`${mcpUrl}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        redirect_uris: [`${origin}/agent`],
+        grant_types: ['authorization_code', 'refresh_token'],
+        response_types: ['code'],
+        client_name: '我的开发部助手',
+      }),
+    })
+    if (!res.ok) {
+      message.error('客户端注册失败，请确认已配置 MCP 服务')
+      return
+    }
+    const data = await res.json()
+    localStorage.setItem('agent_client_id', data.client_id)
+    localStorage.setItem('agent_client_secret', data.client_secret)
+    // 跳转授权（带 state 防 CSRF）
+    const state = Math.random().toString(36).slice(2)
+    sessionStorage.setItem('agent_oauth_state', state)
+    const verifier = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+    const challenge = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
+      .then((buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''))
+    localStorage.setItem('agent_verifier', verifier)
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: data.client_id,
+      redirect_uri: `${origin}/agent`,
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+      state,
+      scope: 'announcement.view idea.view task.view post.view notification.view',
+    })
+    window.location.href = `${mcpUrl}/authorize?${params}`
+  } finally {
+    registering.value = false
+  }
+}
+
+function handleCallback() {
+  // 授权回调：/agent?code=xxx&state=xxx
+  const params = new URLSearchParams(window.location.search)
+  const code = params.get('code')
+  const state = params.get('state')
+  if (!code) return
+  const expected = sessionStorage.getItem('agent_oauth_state')
+  if (expected && state !== expected) {
+    message.error('state 校验失败')
+    history.replaceState(null, '', '/agent')
+    return
+  }
+  sessionStorage.removeItem('agent_oauth_state')
+  // 用 code 换 token 并存储
+  exchangeCode(code)
+  history.replaceState(null, '', '/agent')
+}
+
+async function exchangeCode(code: string) {
+  const clientId = localStorage.getItem('agent_client_id') ?? ''
+  const verifier = localStorage.getItem('agent_verifier') ?? ''
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: `${origin}/agent`,
+    client_id: clientId,
+    code_verifier: verifier,
+  })
+  const res = await fetch(`${mcpUrl}/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  })
+  if (res.ok) {
+    const data = await res.json()
+    localStorage.setItem('agent_access', data.access_token)
+    message.success('授权成功！你的 AI 助手已获得访问令牌')
+  } else {
+    message.error('令牌交换失败')
+  }
+}
+
+async function revokeAuth() {
+  localStorage.removeItem('agent_access')
+  localStorage.removeItem('agent_client_id')
+  localStorage.removeItem('agent_client_secret')
+  localStorage.removeItem('agent_verifier')
+  message.success('已撤销本地授权')
+}
+
+onMounted(() => {
+  load()
+  handleCallback()
+  const hasToken = localStorage.getItem('agent_access')
+  if (hasToken) {
+    authorizedClients.value = [{ id: localStorage.getItem('agent_client_id') ?? 'agent', name: '我的开发部助手', scope: '已授权' }]
+  }
+})
 </script>
 
 <template>
@@ -67,9 +169,18 @@ onMounted(load)
     <div class="grid">
       <div class="panel">
         <h2 class="panel-title">① 授权你的助手</h2>
-        <p class="desc">点击下方按钮授权后，你的助手获得一个访问令牌（按能力包勾选权限）。</p>
-        <a :href="`${mcpUrl}/oauth/authorize?client_id=manual&response_type=code&redirect_uri=${encodeURIComponent(origin + '/agent')}`" class="btn-primary">前往授权</a>
-        <p class="hint">* 授权需先登录成员账号；令牌可在右上角退出登录后重新授权撤销</p>
+        <p class="desc">点击授权后自动完成：客户端注册（DCR）→ GitHub 式授权 → 令牌存储。授权后你的助手可经 MCP 调用系统工具。</p>
+        <button class="btn-primary" :disabled="registering" @click="startAuth">
+          {{ registering ? '注册中…' : '授权我的助手' }}
+        </button>
+        <div v-if="authorizedClients.length" class="auth-list">
+          <div v-for="c in authorizedClients" :key="c.id" class="auth-item">
+            <span class="mono">{{ c.name }}</span>
+            <span class="hint">{{ c.scope }}</span>
+            <button class="copy-btn danger" @click="revokeAuth">撤销</button>
+          </div>
+        </div>
+        <p class="hint">* 需先登录成员账号；撤销后 agent 令牌立即失效</p>
       </div>
 
       <div class="panel">

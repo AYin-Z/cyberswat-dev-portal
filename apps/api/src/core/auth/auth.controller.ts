@@ -1,15 +1,16 @@
 import { Controller, Post, Body, Get, UseGuards, Res } from '@nestjs/common'
+
 import type { Response } from 'express'
 import { AuthGuard } from '@nestjs/passport'
 import { AuthService, type LoginResult } from './auth.service'
 import { Public, CurrentUser, type AuthUser } from '../permissions/permission.decorator'
 import { IsEmail, IsString, MinLength } from 'class-validator'
-
 /** 种会话 cookie（OAuth authorize 需要浏览器会话；httpOnly + SameSite=Lax） */
 function setSessionCookie(res: Response, accessToken: string) {
   res.cookie('cs_session', accessToken, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production', // 🟢-10：生产 https 强制 secure
     maxAge: 15 * 60 * 1000,
     path: '/',
   })

@@ -1,4 +1,5 @@
 import { Body, Controller, ForbiddenException, Get, Param, Post } from '@nestjs/common'
+import { Authorize } from '../permissions/permission.decorator'
 import { ToolRegistry, type ToolCallContext } from './tool.registry'
 import { CurrentUser, type AuthUser } from '../permissions/permission.decorator'
 
@@ -31,13 +32,15 @@ export class ToolsController {
     return this.registry.call(id, body.params, ctx, { skipApproval: true })
   }
 
-  /** 审批记录查询（调试/审计） */
+  /** 审批记录查询（🔴-3：仅部长） */
+  @Authorize('audit.view')
   @Get('audit')
   audit() {
     return this.registry.auditLog()
   }
 
-  /** 待审批队列（部长处置：agent 危险操作） */
+  /** 待审批队列（🔴-3：仅部长处置：agent 危险操作） */
+  @Authorize('audit.view')
   @Get('pending')
   pending() {
     return this.registry.pendingList()

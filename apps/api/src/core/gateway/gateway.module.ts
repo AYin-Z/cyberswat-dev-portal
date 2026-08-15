@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
+import { requireJwtSecret } from '../config'
 import { NotificationGateway } from './notification.gateway'
 
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
+      secret: requireJwtSecret(),
       signOptions: { expiresIn: '15m' },
     }),
   ],

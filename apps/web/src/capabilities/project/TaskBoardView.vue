@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import PageHeader from '../../components/PageHeader.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
@@ -52,7 +52,15 @@ const priorityOptions = [
   { label: '紧急', value: 'URGENT' },
 ]
 
-const colTasks = (key: string) => tasks.value.filter((t) => t.status === key)
+// 🟡-6：computed 缓存列数组（稳定引用，vue-draggable 才能正常增删）
+const colTasksMap = computed(() => {
+  const map: Record<string, TaskItem[]> = {}
+  for (const c of columns) {
+    map[c.key] = tasks.value.filter((t) => t.status === c.key)
+  }
+  return map
+})
+const colTasks = (key: string) => colTasksMap.value[key] ?? []
 
 async function load() {
   const [tRes, mRes, pRes] = await Promise.all([
@@ -153,10 +161,12 @@ onMounted(load)
           :group="{ name: 'tasks' }"
           item-key="id"
           class="col-body"
+          :animation="150"
           @end="(e: any) => {
+            // 🟡-6：vue-draggable 修改的是 colTasks 的临时数组；从 dataset 恢复真实任务并流转
             const id = e.item?.dataset?.id
             const t = tasks.find((x) => x.id === id)
-            if (t) move(t, col.key)
+            if (t && t.status !== col.key) move(t, col.key)
           }"
         >
           <template #item="{ element }">

@@ -1,0 +1,8 @@
+.git
+*.log
+.env
+**/*.tsbuildinfo
+apps/api/node_modules
+apps/web/node_modules
+packages/shared/node_modules
+node_modules

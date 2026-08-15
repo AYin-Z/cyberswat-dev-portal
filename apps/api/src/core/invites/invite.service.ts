@@ -62,14 +62,16 @@ export class InviteService {
     return { id: row.id, role: row.role }
   }
 
-  /** 消费名额（注册成功后调用，原子递增） */
+  /** 消费名额（🔴-7：原子递增 SQL，防并发击穿） */
   async consume(token: string): Promise<void> {
-    const row = await this.prisma.coreInvite.findUnique({ where: { tokenHash: this.hash(token) } })
-    if (!row) return
-    await this.prisma.coreInvite.update({
-      where: { id: row.id },
-      data: { usedCount: { increment: 1 } },
-    })
+    await this.prisma.$executeRaw`
+      UPDATE core_invites
+      SET "usedCount" = "usedCount" + 1
+      WHERE "tokenHash" = ${this.hash(token)}
+        AND revoked = false
+        AND "expiresAt" > now()
+        AND "usedCount" < "maxUses"
+    `
   }
 
   /** 列表（不含明文令牌） */

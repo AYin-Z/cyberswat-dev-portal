@@ -4,13 +4,14 @@ import { PassportModule } from '@nestjs/passport'
 import { AuthService } from './auth.service'
 import { AuthController } from './auth.controller'
 import { GithubAuthController } from './github-auth.controller'
+import { requireJwtSecret } from '../config'
 import { JwtStrategy } from './jwt.strategy'
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
+      secret: requireJwtSecret(),
       signOptions: { expiresIn: '15m' },
     }),
   ],

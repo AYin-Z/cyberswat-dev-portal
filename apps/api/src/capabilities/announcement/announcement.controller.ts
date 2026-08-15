@@ -24,9 +24,16 @@ export class AnnouncementController {
     return this.service.list(user!.id, { importantOnly: importantOnly === 'true' })
   }
 
-  /** 详情 + 标记已读 */
+  /** 详情（🟢-13：GET 无副作用，不再自动标记已读） */
   @Authorize('announcement.view')
   @Get(':id')
+  detail(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.service.detail(id, user.id)
+  }
+
+  /** 显式标记已读（浏览器预取/爬虫不会污染统计） */
+  @Authorize('announcement.view')
+  @Post(':id/read')
   read(@Param('id') id: string, @CurrentUser() user: AuthUser): Promise<AnnouncementView> {
     return this.service.markRead(id, user.id, false)
   }

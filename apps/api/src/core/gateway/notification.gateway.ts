@@ -136,6 +136,17 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     })
   }
 
+  /** 🟡-9：所有通知（评论/点赞/@提及/匹配/审批/bot）实时推送到目标用户 */
+  @OnEvent('notification.created')
+  async onNotificationCreated(payload: {
+    userId: string
+    notification: { id: string; type: string; title: string; content: string | null; link: string | null }
+  }) {
+    const { userId, notification } = payload
+    this.server.to(`user:${userId}`).emit('notification:new', notification)
+    this.server.to(`user:${userId}`).emit('notification:unread', { count: 'refresh' })
+  }
+
   /** 通用 @提及/评论/点赞 → 目标用户推送（由 notification:new 事件承载） */
   async pushToUser(userId: string, data: { type: string; title: string; link?: string }) {
     this.server.to(`user:${userId}`).emit('notification:new', data)

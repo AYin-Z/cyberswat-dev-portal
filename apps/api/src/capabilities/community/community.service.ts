@@ -66,7 +66,7 @@ export class CommunityService {
   /** 帖子列表（板块筛选） */
   async listPosts(viewerId: string, board?: PostBoard): Promise<PostView[]> {
     const rows = await this.prisma.post.findMany({
-      where: board ? { board } : undefined,
+      where: { ...(board ? { board } : {}), deletedAt: null },
       include: {
         author: { select: { id: true, nickname: true } },
         _count: { select: { comments: true, likes: true } },
@@ -107,12 +107,13 @@ export class CommunityService {
   /** 帖子详情 + 评论 */
   async postDetail(postId: string, viewerId: string) {
     const post = await this.prisma.post.findUnique({
-      where: { id: postId },
+      where: { id: postId, deletedAt: null },
       include: {
         author: { select: { id: true, nickname: true } },
         _count: { select: { comments: true, likes: true } },
         likes: { where: { userId: viewerId }, select: { id: true } },
         comments: {
+          where: { deletedAt: null },
           include: { author: { select: { id: true, nickname: true } } },
           orderBy: { createdAt: 'asc' },
         },
@@ -125,6 +126,7 @@ export class CommunityService {
         id: c.id,
         content: c.content,
         author: c.author,
+        authorViaAgent: (c as { authorViaAgent?: boolean }).authorViaAgent ?? false,
         createdAt: c.createdAt.toISOString(),
       })),
     }
@@ -133,7 +135,7 @@ export class CommunityService {
   /** 评论（@提及 → 通知） */
   async addComment(postId: string, authorId: string, content: string) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } })
-    if (!post) throw new NotFoundException('帖子不存在')
+    if (!post || post.deletedAt) throw new NotFoundException('帖子不存在')
     const comment = await this.prisma.postComment.create({
       data: { postId, authorId, content },
       include: { author: { select: { id: true, nickname: true } } },

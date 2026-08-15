@@ -58,6 +58,8 @@ export class DevAssistantBot {
   /** 订阅评论/帖子创建：检测 @dev-assistant → 回复 */
   @OnEvent('bot.mention')
   async onMention(payload: { content: string; postId: string; byUserId: string; commentId?: string }) {
+    // 🟢-15：确保 bot 用户已初始化（幂等）
+    await this.ensure()
     const agent = await this.prisma.coreAgent.findUnique({ where: { name: BOT_NAME } })
     if (!agent?.enabled) return
 
@@ -68,17 +70,17 @@ export class DevAssistantBot {
     // 去掉触发词，取询问内容
     const question = text.replace(mentionRe, '').trim()
     if (!question) {
-      await this.reply(payload.postId, '在的！@我 可以问：最近公告 / 招募中的点子 / 任务进展 / 社区帖子')
+      await this.reply(payload.postId, '在的！@我 可以问：最近公告 / 招募中的点子 / 任务进展 / 社区帖子', payload.commentId, payload.byUserId)
       return
     }
 
     const answer = await this.answer(question, payload.byUserId)
-    await this.reply(payload.postId, answer, payload.commentId)
+    await this.reply(payload.postId, answer, payload.commentId, payload.byUserId)
   }
 
   /** 回答：关键词 → 工具调用 → 摘要（模板引擎） */
   private async answer(question: string, byUserId: string): Promise<string> {
-    const ctx: ToolCallContext = { caller: BOT_IDENTITY, role: 'member' }
+    const ctx: ToolCallContext = { caller: BOT_IDENTITY, role: 'member', agentId: BOT_IDENTITY }
     const q = question.toLowerCase()
 
     try {
@@ -109,17 +111,30 @@ export class DevAssistantBot {
     }
   }
 
-  /** 以 bot 身份回复（AI 署名 authorViaAgent 由前端角标呈现，这里直接带标记文本） */
-  private async reply(postId: string, content: string, replyToCommentId?: string) {
+  /** 以 bot 身份回复（🟡-11：authorViaAgent 结构化标识；🟡-10：通知发起人） */
+  private async reply(postId: string, content: string, replyToCommentId?: string, byUserId?: string) {
     const agent = await this.prisma.coreAgent.findUnique({ where: { name: BOT_NAME } })
     if (!agent?.userId) return
-    await this.prisma.postComment.create({
+    const comment = await this.prisma.postComment.create({
       data: {
         postId,
         authorId: agent.userId,
         content: `${content}\n\n— 🤖 ${agent.displayName}`,
+        authorViaAgent: true,
       },
     })
-    this.logger.log(`[bot] 已回复帖子 ${postId.slice(0, 8)}`)
+    // 🟡-10：通知 @ 发起人
+    if (byUserId && byUserId !== agent.userId) {
+      await this.prisma.notification.create({
+        data: {
+          userId: byUserId,
+          type: 'bot',
+          title: `${agent.displayName} 回复了你的消息`,
+          content: content.slice(0, 60),
+          link: `/posts/${postId}`,
+        },
+      })
+    }
+    this.logger.log(`[bot] 已回复帖子 ${postId.slice(0, 8)} (comment ${comment.id.slice(0, 8)})`)
   }
 }

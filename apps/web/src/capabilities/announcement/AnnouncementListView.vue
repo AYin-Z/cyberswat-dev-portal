@@ -71,6 +71,12 @@ onMounted(load)
           <n-tag v-if="a.important" size="small" type="warning" :bordered="false">重要</n-tag>
           <span v-if="!a.read" class="dot" title="未读" />
           <span class="title">{{ a.title }}</span>
+          <button
+            v-if="a.important && !a.confirmed"
+            class="confirm-btn"
+            @click.stop="confirm(a)"
+          >确认收到</button>
+          <span v-else-if="a.important && a.confirmed" class="confirmed">✓ 已确认</span>
         </div>
         <p class="meta">
           {{ a.author.nickname }} · {{ a.publishedAt?.slice(0, 16).replace('T', ' ') }}
@@ -85,6 +91,24 @@ onMounted(load)
 </template>
 
 <style scoped>
+.confirm-btn {
+  background: transparent;
+  border: 1px solid var(--cs-warning);
+  color: var(--cs-warning);
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.confirm-btn:hover {
+  background: rgba(210, 153, 34, 0.15);
+}
+.confirmed {
+  color: var(--cs-success);
+  font-size: 12px;
+  flex-shrink: 0;
+}
 .new-link {
   color: var(--cs-accent);
   font-size: 13px;

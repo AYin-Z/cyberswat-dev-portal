@@ -241,14 +241,22 @@ export class ProjectService {
     return this.toTaskView(task)
   }
 
-  /** 接单（被指派人或任意成员认领 TODO 任务） */
+  /** 接单（🟡-22：已被指派的 TODO 仅指派人可认领；原子更新防并发双认领） */
   async claim(taskId: string, userId: string): Promise<TaskView> {
     const task = await this.prisma.task.findUnique({ where: { id: taskId }, include: { assignee: true } })
     if (!task) throw new NotFoundException('任务不存在')
     if (task.status !== 'TODO') throw new BadRequestException('仅待接单任务可认领')
-    const updated = await this.prisma.task.update({
-      where: { id: taskId },
+    if (task.assigneeId && task.assigneeId !== userId) {
+      throw new BadRequestException('该任务已指派给其他成员，无法认领')
+    }
+    // 原子认领：仅当仍为 TODO 时更新（防并发双认领）
+    const claimed = await this.prisma.task.updateMany({
+      where: { id: taskId, status: 'TODO' },
       data: { status: 'IN_PROGRESS', assigneeId: task.assigneeId ?? userId },
+    })
+    if (claimed.count === 0) throw new BadRequestException('任务已被他人认领')
+    const updated = await this.prisma.task.findUniqueOrThrow({
+      where: { id: taskId },
       include: { assignee: { select: { id: true, nickname: true } }, creator: { select: { id: true, nickname: true } }, project: { select: { name: true } } },
     })
     this.events.emit('task.status.changed', { taskId, from: 'TODO', to: 'IN_PROGRESS' })

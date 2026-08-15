@@ -23,6 +23,19 @@ export const router = createRouter({
   ],
 })
 
+// 路由守卫（🔴-8）：受保护页未登录 → /login
+const publicPaths = ['/login', '/register']
+router.beforeEach((to) => {
+  const token = localStorage.getItem('dev_token')
+  if (!token && !publicPaths.includes(to.path)) {
+    return { path: '/login', query: { next: to.fullPath } }
+  }
+  if (token && publicPaths.includes(to.path)) {
+    return { path: '/' }
+  }
+  return true
+})
+
 router.afterEach((to) => {
   const title = to.meta.title as string | undefined
   document.title = title ? `${title} · CyberSWAT 开发部` : 'CyberSWAT 开发部'

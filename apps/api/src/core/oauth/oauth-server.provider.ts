@@ -2,23 +2,25 @@ import { BadRequestException, Injectable, Logger, UnauthorizedException } from '
 import type { Response } from 'express'
 import { createHash, randomBytes } from 'node:crypto'
 import { PrismaService } from '../db/prisma.service'
+import { requireJwtSecret } from '../config'
+import { PermissionsService } from '../permissions/permissions.service'
 import { OAuthClientsStore, genCode, genToken, oauthHash } from './oauth-clients.store'
 import type { OAuthServerProvider as OAuthProviderIface, AuthorizationParams } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/auth/provider.js'
 import type { OAuthClientInformationFull, OAuthTokens } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/shared/auth.js'
 import type { AuthInfo } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/auth/types.js'
 
 const CODE_TTL = 10 * 60 * 1000 // 授权码 10 分钟
-const JWT_SECRET = () => process.env.JWT_SECRET ?? 'dev-secret-change-me'
+// JWT_SECRET 统一走 requireJwtSecret()
 
 /** access token = JWT（携带 sub=userId, scopes, clientId），verify 用 jose 验签 */
 async function signAccessToken(userId: string, scopes: string[], clientId: string): Promise<string> {
   const { SignJWT } = await import('jose')
-  return new SignJWT({ scopes, clientId })
+  return new SignJWT({ scopes, clientId, aud: 'mcp' })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(userId)
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + Math.floor(ACCESS_TTL / 1000))
-    .sign(new TextEncoder().encode(JWT_SECRET()))
+    .sign(new TextEncoder().encode(requireJwtSecret()))
 }
 const ACCESS_TTL = 60 * 60 * 1000 // access 1 小时
 const REFRESH_TTL = 30 * 24 * 3600 * 1000 // refresh 30 天
@@ -35,6 +37,7 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clients: OAuthClientsStore,
+    private readonly permissions: PermissionsService,
   ) {}
 
   get clientsStore() {
@@ -66,6 +69,12 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
       return
     }
 
+    // 🔴-5b：scope 必须 ⊆ owner 角色实际拥有的权限点（防止 scope 膨胀越权）
+    const allowed = await this.allowedScopesFor(user.id, params.scopes ?? [])
+    if (allowed.length === 0 && (params.scopes ?? []).length > 0) {
+      fail('access_denied', '请求的权限超出你的角色范围')
+      return
+    }
     const code = genCode()
     await this.prisma.coreOauthCode.create({
       data: {
@@ -73,7 +82,7 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
         code,
         codeChallenge: params.codeChallenge,
         userId: user.id,
-        scopes: params.scopes ?? [],
+        scopes: allowed,
         redirectUri,
         expiresAt: new Date(Date.now() + CODE_TTL),
       },
@@ -137,7 +146,14 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
     if (!row || row.revoked) throw new UnauthorizedException('refresh token 无效')
     if (row.expiresAt < new Date()) throw new UnauthorizedException('refresh token 已过期')
     if (row.clientId !== client.client_id) throw new UnauthorizedException('client 不匹配')
+    // 🔴-6b：refresh 前校验用户仍激活
+    const owner = await this.prisma.coreUser.findUnique({ where: { id: row.userId }, select: { active: true } })
+    if (!owner?.active) throw new UnauthorizedException('账号已停用')
 
+    // 🔴-5c：refresh 请求的 scope 必须 ⊆ 原 scope（防自提权）
+    if (scopes && scopes.some((sc) => !row.scope.includes(sc))) {
+      throw new UnauthorizedException('scope 超出原授权范围')
+    }
     const newRefresh = genToken()
     await this.prisma.coreOauthToken.update({
       where: { id: row.id },
@@ -168,7 +184,7 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
     // 更稳：access token 用 JWT 签名（复用 JWT_SECRET），携带 sub+scopes
     try {
       const { jwtVerify } = await import('jose')
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? 'dev-secret-change-me')
+      const secret = new TextEncoder().encode(requireJwtSecret())
       const { payload } = await jwtVerify(token, secret)
       this.logger.log(`[oauth] verify token: scopes=${JSON.stringify(payload.scopes)} sub=${payload.sub}`)
       return {
@@ -183,6 +199,27 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
     }
   }
 
+  /** 🔴-5b：owner 角色实际拥有的 scope（权限点） */
+  private async allowedScopesFor(userId: string, requested: string[]): Promise<string[]> {
+    const user = await this.prisma.coreUser.findUnique({ where: { id: userId }, select: { role: true } })
+    if (!user) return []
+    // 角色 → 权限点：直接按角色的可见工具权限点聚合（简化：允许所有其角色可见工具的 requiredPermission + 已注册权限点）
+    const permRows = await this.prisma.coreRolePermission.findMany({ where: { role: user.role } })
+    const dbPerms = new Set(permRows.map((r) => r.permission))
+    const rolePerms = new Set<string>()
+    // 从 PermissionService 的内存 defaultRoles 推导（注册时的默认映射）
+    const roleName = user.role.toLowerCase() as 'guest' | 'member' | 'dept-leader' | 'admin'
+    for (const p of this.permissions.list()) {
+      if (p.defaultRoles.includes(roleName)) rolePerms.add(p.id)
+    }
+    return requested.filter((sc) => dbPerms.has(sc) || rolePerms.has(sc) || this.isCoreScope(sc))
+  }
+
+  /** 内核级 scope（无需角色即有：example.* 等无权限点工具） */
+  private isCoreScope(sc: string): boolean {
+    return sc.startsWith('example.') || sc.startsWith('core.')
+  }
+
   /** 撤销（用户冻结时级联） */
   async revokeUserTokens(userId: string): Promise<void> {
     await this.prisma.coreOauthToken.updateMany({
@@ -195,7 +232,7 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
   private async resolveSession(sessionToken: string) {
     try {
       const { jwtVerify } = await import('jose')
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? 'dev-secret-change-me')
+      const secret = new TextEncoder().encode(requireJwtSecret())
       const { payload } = await jwtVerify(sessionToken, secret)
       const user = await this.prisma.coreUser.findUnique({ where: { id: payload.sub as string } })
       return user?.active ? user : null

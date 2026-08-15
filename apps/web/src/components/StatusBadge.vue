@@ -38,7 +38,8 @@ const maps: Record<string, Record<string, { label: string; color: string }>> = {
 }
 
 const meta = computed(() => {
-  const map = maps[props.type ?? 'generic'] ?? maps.generic
+  const map = maps[props.type ?? 'generic']
+  if (!map) return { label: props.status, color: 'var(--cs-ink-subtle)' }
   return map[props.status] ?? { label: props.status, color: 'var(--cs-ink-subtle)' }
 })
 </script>

@@ -8,7 +8,7 @@ import { DevAssistantBot } from './dev-assistant.service'
 export class BotModule implements OnModuleInit {
   constructor(private readonly bot: DevAssistantBot) {}
 
-  onModuleInit() {
-    this.bot.ensure()
+  async onModuleInit() {
+    await this.bot.ensure()
   }
 }

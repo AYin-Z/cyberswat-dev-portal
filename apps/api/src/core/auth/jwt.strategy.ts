@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
+import { requireJwtSecret } from '../config'
 import type { Role } from '@cyberswat/shared'
 import type { AuthUser } from '../permissions/permission.decorator'
 
@@ -17,11 +18,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET ?? 'dev-secret-change-me',
+      secretOrKey: requireJwtSecret(),
     })
   }
 
-  validate(payload: JwtPayload): AuthUser {
+  validate(payload: JwtPayload & { aud?: string | string[] }): AuthUser {
+    // 🟡-20：OAuth MCP access token（aud=mcp）不得访问站点 API
+    const aud = payload.aud
+    const auds = Array.isArray(aud) ? aud : [aud]
+    if (auds.includes('mcp')) {
+      throw new UnauthorizedException('MCP 令牌不能访问站点 API')
+    }
     return { id: payload.sub, role: payload.role, nickname: payload.nickname }
   }
 }

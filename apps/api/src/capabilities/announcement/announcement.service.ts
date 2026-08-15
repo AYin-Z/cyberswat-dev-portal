@@ -115,6 +115,19 @@ export class AnnouncementService {
     return this.toView(row)
   }
 
+  /** 详情（无副作用） */
+  async detail(announcementId: string, userId: string): Promise<AnnouncementView> {
+    const row = await this.prisma.announcement.findUnique({
+      where: { id: announcementId },
+      include: {
+        author: { select: { id: true, nickname: true } },
+        reads: { where: { userId }, select: { confirmed: true } },
+      },
+    })
+    if (!row) throw new NotFoundException('公告不存在')
+    return this.toView(row)
+  }
+
   /** 阅读：标记已读 + 重要公告确认（幂等） */
   async markRead(announcementId: string, userId: string, confirm = false): Promise<AnnouncementView> {
     const ann = await this.prisma.announcement.findUnique({

@@ -23,6 +23,7 @@ import { McpToolsBridge, mcpAls } from './mcp-tools.bridge'
 export class McpModule implements OnApplicationBootstrap {
   private readonly logger = new Logger(McpModule.name)
   private readonly sessions = new Map<string, StreamableHTTPServerTransport>()
+  private static readonly MAX_SESSIONS = 200 // 🟡-1：会话上限防内存膨胀
   private mcpApp: Express | null = null
 
   constructor(
@@ -77,6 +78,10 @@ export class McpModule implements OnApplicationBootstrap {
       try {
       const sessionId = (req.headers['mcp-session-id'] as string) ?? randomUUID()
       let transport = this.sessions.get(sessionId)
+      if (this.sessions.size >= McpModule.MAX_SESSIONS) {
+        res.status(429).json({ error: 'too_many_sessions', error_description: '会话数已达上限，请稍后再试' })
+        return
+      }
       if (!transport) {
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => sessionId,

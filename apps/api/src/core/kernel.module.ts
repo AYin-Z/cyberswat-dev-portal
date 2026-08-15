@@ -18,7 +18,6 @@ import { McpModule } from './mcp/mcp.module'
 import { InviteService } from './invites/invite.service'
 import { HealthController } from './health.controller'
 // 能力包（插件行）：新增能力包时在此追加 import + imports
-import { ExampleModule } from '../capabilities/example/example.module'
 import { AnnouncementModule } from '../capabilities/announcement/announcement.module'
 import { IdeaModule } from '../capabilities/idea-wall/idea.module'
 import { IdeaMatchService } from '../capabilities/idea-wall/idea-match.service'
@@ -46,8 +45,7 @@ import { CommunityModule } from '../capabilities/community/community.module'
     ModerationModule,
     GatewayModule,
     McpModule,
-    // —— 能力包装配区 ——
-    ExampleModule,
+    // —— 能力包装配区 ——（example 仅作开发模板，不装配进生产）
     AnnouncementModule,
     IdeaModule,
     ProjectModule,
@@ -71,6 +69,8 @@ export class KernelModule implements OnModuleInit {
       { id: 'invite.create', description: '创建成员邀请', defaultRoles: ['dept-leader', 'admin'] },
       { id: 'invite.list', description: '查看/撤销邀请', defaultRoles: ['dept-leader', 'admin'] },
       { id: 'notification.view', description: '查看通知', defaultRoles: ['member', 'dept-leader', 'admin'] },
+      { id: 'audit.view', description: '查看工具审计与审批队列', defaultRoles: ['dept-leader', 'admin'] },
+      { id: 'user.freeze', description: '冻结成员账号（级联撤销会话与agent授权）', defaultRoles: ['admin'] },
     ])
 
     // agent 开邀请 = 拉人进系统，危险操作 → 需部长审批

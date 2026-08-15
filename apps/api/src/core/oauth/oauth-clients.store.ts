@@ -16,9 +16,14 @@ export class OAuthClientsStore implements OAuthRegisteredClientsStore {
   async getClient(clientId: string): Promise<OAuthClientInformationFull | undefined> {
     const c = await this.prisma.coreOauthClient.findUnique({ where: { id: clientId } })
     if (!c) return undefined
+    // 🟡-19：返回哈希值供 SDK clientAuth 比对（SDK 用 === 比较 client_secret）
+    // 注：SDK 比对的是明文请求 vs 此处返回值——因此这里返回注册时生成的原始 secret 的哈希不可行，
+    // SDK 要求明文比对。安全做法：secret 用可逆加密存，或让 SDK 走 PKCE-only（secret 置空）。
+    // 本项目 MCP 客户端均为 PKCE 流（token_endpoint_auth_methods: none），secret 仅作登记凭证，
+    // 返回空使 SDK 跳过 secret 校验，真正认证依赖 PKCE + 授权码一次性 + state。
     return {
       client_id: c.id,
-      client_secret: c.secretHash ? undefined : undefined, // 不返回 secret
+      client_secret: undefined,
       client_id_issued_at: Math.floor(c.issuedAt.getTime() / 1000),
       client_secret_expires_at: c.secretExpiresAt ? Math.floor(c.secretExpiresAt.getTime() / 1000) : 0,
       redirect_uris: c.redirectUris,

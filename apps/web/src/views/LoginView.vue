@@ -29,20 +29,21 @@ function githubLogin() {
 }
 
 onMounted(() => {
-  // GitHub OAuth 回调：/login?token=xxx
-  const token = route.query.token as string | undefined
-  if (token) {
-    auth.token = token
-    auth.user = null
-    localStorage.setItem('dev_token', token)
-    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+  // GitHub OAuth 回调：/login#token=xxx（fragment，🔴-10）
+  const hashToken = window.location.hash.match(/token=([^&]+)/)?.[1]
+  if (hashToken) {
+    // 立即清除 hash（防残留浏览器历史/分享链接，🟢-12）
+    history.replaceState(null, '', window.location.pathname)
+    auth.setTokens(hashToken, '')
+    auth.setUser({ id: '', role: '', nickname: '' })
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${hashToken}` } })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((u) => {
-        auth.user = u
+        auth.setUser(u)
         router.replace('/')
       })
       .catch(() => {
-        error.value = 'GitHub 登录成功但获取用户信息失败'
+        error.value = 'GitHub 登录成功但获取用户信息失败，请重新登录'
       })
   }
 })

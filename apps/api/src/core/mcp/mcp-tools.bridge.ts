@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { PrismaService } from '../db/prisma.service'
 import { Server as McpServer } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/index.js'
 import { ListToolsRequestSchema, CallToolRequestSchema } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/types.js'
 import { ToolRegistry, type ToolCallContext } from '../tools/tool.registry'
@@ -38,7 +39,10 @@ export class McpToolsBridge {
   /** 限额计数：key = userId:r|w，value = 时间戳数组 */
   private readonly rateMap = new Map<string, number[]>()
 
-  constructor(private readonly tools: ToolRegistry) {}
+  constructor(
+    private readonly tools: ToolRegistry,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /** 每个 MCP 会话一个 Server 实例（SDK 限制：单实例只能连一个 transport） */
   createServer(): McpServer {
@@ -82,7 +86,13 @@ export class McpToolsBridge {
       const write = isWriteTool(def.id, def.requiresApproval)
       this.checkRate(auth.userId, write)
 
-      const ctx: ToolCallContext = { caller: auth.userId, role: 'member', agentId: auth.clientId }
+      // 🔴-5d：以 owner 真实角色执行（干部 agent 的写工具审批后能真正执行）
+      const owner = await this.prisma.coreUser.findUnique({
+        where: { id: auth.userId },
+        select: { role: true },
+      })
+      const ownerRole = (owner?.role.toLowerCase() ?? 'member') as 'guest' | 'member' | 'dept-leader' | 'admin'
+      const ctx: ToolCallContext = { caller: auth.userId, role: ownerRole, agentId: auth.clientId }
       const result = await this.tools.call(def.id, request.params.arguments ?? {}, ctx, { skipRoleCheck: true })
       return {
         content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result, null, 2) }],

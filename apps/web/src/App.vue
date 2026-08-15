@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, h, ref } from 'vue'
-import { NConfigProvider, NLayout, NLayoutSider, NLayoutHeader, NLayoutContent, NMenu, NAvatar, NButton, NDropdown, darkTheme, zhCN, dateZhCN } from 'naive-ui'
+import { NConfigProvider, NLayout, NLayoutSider, NLayoutHeader, NLayoutContent, NMenu, NAvatar, NButton, NDropdown, NMessageProvider, NDialogProvider, darkTheme, zhCN, dateZhCN } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useUiStore } from './stores/ui'
@@ -53,6 +53,7 @@ function onUserSelect(key: string) {
 
 <template>
   <n-config-provider :theme="darkTheme" :theme-overrides="themeOverrides" :locale="zhCN" :date-locale="dateZhCN">
+    <n-message-provider><n-dialog-provider>
     <n-layout has-sider class="shell">
       <!-- 侧边栏 -->
       <n-layout-sider
@@ -101,6 +102,7 @@ function onUserSelect(key: string) {
         </n-layout-content>
       </n-layout>
     </n-layout>
+    </n-dialog-provider></n-message-provider>
   </n-config-provider>
 </template>
 

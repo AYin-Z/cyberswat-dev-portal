@@ -132,6 +132,11 @@ export class UsersService {
     return this.toInternal(u)
   }
 
+  /** 🔴-6：冻结用户（active=false）— 级联撤销由 AuthService/oauth 处理 */
+  async freeze(id: string): Promise<void> {
+    await this.prisma.coreUser.update({ where: { id }, data: { active: false } })
+  }
+
   /** 更新 GitHub 绑定（OAuth 回调后同步） */
   async updateGithub(
     id: string,

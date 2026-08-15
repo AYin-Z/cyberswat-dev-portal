@@ -67,10 +67,10 @@ export class ModerationService {
 
     switch (targetType) {
       case 'post':
-        await this.prisma.post.update({ where: { id: targetId }, data: { title: MARKER, content: MARKER_CONTENT } })
+        await this.prisma.post.update({ where: { id: targetId }, data: { deletedAt: new Date() } })
         break
       case 'comment':
-        await this.prisma.postComment.update({ where: { id: targetId }, data: { content: MARKER_CONTENT } })
+        await this.prisma.postComment.update({ where: { id: targetId }, data: { deletedAt: new Date() } })
         break
       case 'idea':
         await this.prisma.idea.update({ where: { id: targetId }, data: { title: MARKER, description: MARKER_CONTENT } })

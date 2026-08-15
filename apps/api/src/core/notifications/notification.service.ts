@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../db/prisma.service'
+import { EventBus } from '../events/event-bus'
 
 /**
  * 通知中心 — 站内通知（@提及/任务/公告/点子/系统）。
@@ -9,9 +10,12 @@ import { PrismaService } from '../db/prisma.service'
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name)
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventBus,
+  ) {}
 
-  /** 创建通知（全量落库，socket 推送由网关订阅事件完成） */
+  /** 创建通知（全量落库；🟡-9：落库后经事件总线推送 socket，评论/点赞/@/匹配全覆盖） */
   async notify(input: {
     userId: string
     type: string
@@ -19,13 +23,26 @@ export class NotificationService {
     content?: string
     link?: string
   }): Promise<void> {
-    await this.prisma.notification.create({
+    const row = await this.prisma.notification.create({
       data: {
         userId: input.userId,
         type: input.type,
         title: input.title,
         content: input.content,
         link: input.link,
+      },
+    })
+    // 🟡-9：事件总线广播（网关 @OnEvent('notification.created') 实时推送，覆盖评论/点赞/@/匹配/审批）
+    this.events.emitRaw('notification.created', {
+      userId: input.userId,
+      notification: {
+        id: row.id,
+        type: row.type,
+        title: row.title,
+        content: row.content,
+        link: row.link,
+        read: row.read,
+        createdAt: row.createdAt.toISOString(),
       },
     })
   }
