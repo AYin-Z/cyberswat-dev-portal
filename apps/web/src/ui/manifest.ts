@@ -11,6 +11,8 @@ import { ideaUi } from '../capabilities/idea-wall/idea.ui'
 import { membersUi } from '../capabilities/members/members.ui'
 import { projectUi } from '../capabilities/project/project.ui'
 import { communityUi } from '../capabilities/community/community.ui'
+import { profileUi } from '../capabilities/profile/profile.ui'
+import { moderationUi } from '../capabilities/moderation/moderation.ui'
 
 export const uiContributions: UiContribution[] = [
   exampleUi,
@@ -20,4 +22,6 @@ export const uiContributions: UiContribution[] = [
   membersUi,
   projectUi,
   communityUi,
+  profileUi,
+  moderationUi,
 ]

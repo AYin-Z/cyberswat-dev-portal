@@ -8,7 +8,9 @@
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@cyberswat/shared": "workspace:*",
@@ -27,19 +29,25 @@
     "class-validator": "^0.14.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "prisma": "^6.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "socket.io": "^4.8.3",
-    "prisma": "^6.0.0"
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
+    "@nestjs/testing": "^11.1.29",
+    "@swc/core": "^1.15.47",
     "@types/bcryptjs": "^2.4.6",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
     "@types/passport-jwt": "^4.0.1",
+    "@types/supertest": "^7.2.1",
     "socket.io-client": "^4.8.3",
+    "supertest": "^7.2.2",
     "tsx": "^4.19.0",
-    "typescript": "~5.7.2"
+    "typescript": "~5.7.2",
+    "unplugin-swc": "^1.5.11",
+    "vitest": "^4.1.10"
   }
 }

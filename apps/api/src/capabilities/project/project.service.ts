@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { ProjectStatus, TaskPriority, TaskStatus } from '@prisma/client'
 import { EventBus } from '../../core/events/event-bus'
 import { PrismaService } from '../../core/db/prisma.service'
@@ -182,6 +182,22 @@ export class ProjectService {
     }
   }
 
+  /** 资源级校验：用户是否为项目 LEAD（P6 项目级权限） */
+  async isProjectLead(projectId: string | null, userId: string): Promise<boolean> {
+    if (!projectId) return false
+    const m = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId, userId } },
+    })
+    return m?.role === 'LEAD'
+  }
+
+  /** 项目管理权：全局 dept-leader/admin 或 项目 LEAD（P6 双条件校验） */
+  async assertCanManageProject(userId: string, role: string, projectId: string | null): Promise<void> {
+    if (role === 'admin' || role === 'dept-leader') return
+    if (projectId && (await this.isProjectLead(projectId, userId))) return
+    throw new ForbiddenException('需要部长权限或项目负责人权限')
+  }
+
   async addMember(projectId: string, userId: string): Promise<void> {
     await this.prisma.projectMember.create({ data: { projectId, userId } })
   }
@@ -199,7 +215,9 @@ export class ProjectService {
       dueAt?: Date
       projectId?: string
     },
+    actorRole?: string,
   ): Promise<TaskView> {
+    await this.assertCanManageProject(creatorId, actorRole ?? 'member', data.projectId ?? null)
     const task = await this.prisma.task.create({
       data: {
         title: data.title,
@@ -252,12 +270,15 @@ export class ProjectService {
     return this.toTaskView(updated)
   }
 
-  /** 验收（创建者/部长）：通过 → DONE；驳回 → 回到 IN_PROGRESS */
-  async review(taskId: string, userId: string, approve: boolean): Promise<TaskView> {
+  /** 验收（创建者/项目 LEAD/部长）：通过 → DONE；驳回 → 回到 IN_PROGRESS */
+  async review(taskId: string, userId: string, approve: boolean, actorRole?: string): Promise<TaskView> {
     const task = await this.prisma.task.findUnique({ where: { id: taskId } })
     if (!task) throw new NotFoundException('任务不存在')
     if (task.status !== 'REVIEW') throw new BadRequestException('仅待验收任务可评审')
-    if (task.creatorId !== userId) throw new BadRequestException('仅任务创建者可验收')
+    const isLead = task.projectId ? await this.isProjectLead(task.projectId, userId) : false
+    if (task.creatorId !== userId && !isLead && actorRole !== 'admin' && actorRole !== 'dept-leader') {
+      throw new BadRequestException('仅任务创建者/项目负责人可验收')
+    }
     const updated = await this.prisma.task.update({
       where: { id: taskId },
       data: { status: approve ? 'DONE' : 'IN_PROGRESS' },

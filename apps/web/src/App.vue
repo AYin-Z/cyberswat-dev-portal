@@ -37,11 +37,14 @@ const activeKey = computed(() => {
 
 // 用户菜单
 const userOptions: MenuOption[] = [
+  { label: '个人资料', key: 'profile' },
   { label: '退出登录', key: 'logout' },
 ]
 
 function onUserSelect(key: string) {
-  if (key === 'logout') {
+  if (key === 'profile') {
+    router.push('/profile')
+  } else if (key === 'logout') {
     auth.logout()
     router.push('/login')
   }

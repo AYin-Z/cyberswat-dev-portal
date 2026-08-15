@@ -49,9 +49,10 @@ export class ProjectController {
     return this.service.promoteIdea(ideaId, user.id, dto)
   }
 
-  @Authorize('project.manage')
+  @Authorize()
   @Post('projects/:id/members')
-  addMember(@Param('id') id: string, @Body('userId') userId: string) {
+  async addMember(@Param('id') id: string, @Body('userId') userId: string, @CurrentUser() user: AuthUser) {
+    await this.service.assertCanManageProject(user.id, user.role, id)
     return this.service.addMember(id, userId)
   }
 
@@ -67,17 +68,21 @@ export class ProjectController {
     return this.service.listTasks({ status, assigneeId, projectId })
   }
 
-  @Authorize('task.assign')
+  @Authorize()
   @Post('tasks')
   createTask(@Body() dto: CreateTaskDto, @CurrentUser() user: AuthUser): Promise<TaskView> {
-    return this.service.create(user.id, {
-      title: dto.title,
-      description: dto.description,
-      assigneeId: dto.assigneeId,
-      priority: dto.priority,
-      dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
-      projectId: dto.projectId,
-    })
+    return this.service.create(
+      user.id,
+      {
+        title: dto.title,
+        description: dto.description,
+        assigneeId: dto.assigneeId,
+        priority: dto.priority,
+        dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
+        projectId: dto.projectId,
+      },
+      user.role,
+    )
   }
 
   @Authorize('task.work')
@@ -92,13 +97,13 @@ export class ProjectController {
     return this.service.submit(id, user.id, dto.note)
   }
 
-  @Authorize('task.assign')
+  @Authorize()
   @Post('tasks/:id/review')
   review(
     @Param('id') id: string,
     @Body('approve') approve: boolean,
     @CurrentUser() user: AuthUser,
   ): Promise<TaskView> {
-    return this.service.review(id, user.id, approve === true)
+    return this.service.review(id, user.id, approve === true, user.role)
   }
 }

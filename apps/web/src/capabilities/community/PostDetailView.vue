@@ -55,6 +55,32 @@ async function like() {
   await load()
 }
 
+async function report() {
+  const reason = window.prompt('举报原因：') ?? ''
+  if (!reason.trim()) return
+  const res = await fetch(`/api/moderation/report/post/${post.value.id}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${auth.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  })
+  if (res.ok) message.success('已提交举报，部长将处置')
+  else message.error('举报失败')
+}
+
+async function removePost() {
+  if (!window.confirm('确认删除该帖子？（软删除，可留审计）')) return
+  const res = await fetch(`/api/moderation/post/${post.value.id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${auth.token}` },
+  })
+  if (res.ok) {
+    message.success('已删除')
+    await load()
+  } else {
+    message.error('删除失败（只能删自己的或部长）')
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -69,9 +95,21 @@ onMounted(load)
       <p class="meta">{{ post.author.nickname }} · {{ post.createdAt.slice(0, 16).replace('T', ' ') }}</p>
       <p class="content">{{ post.content }}</p>
 
-      <n-button size="small" :type="post.liked ? 'primary' : 'default'" quaternary @click="like">
-        👍 {{ post.likeCount }}
-      </n-button>
+      <div class="post-actions">
+        <n-button size="small" :type="post.liked ? 'primary' : 'default'" quaternary @click="like">
+          👍 {{ post.likeCount }}
+        </n-button>
+        <n-button size="small" quaternary @click="report">举报</n-button>
+        <n-button
+          v-if="auth.user?.id === post.author.id || auth.user?.role === 'dept-leader' || auth.user?.role === 'admin'"
+          size="small"
+          quaternary
+          type="error"
+          @click="removePost"
+        >
+          删除
+        </n-button>
+      </div>
 
       <h2 class="sec tnum">评论（{{ post.commentCount }}）</h2>
       <div class="comments">
@@ -97,6 +135,11 @@ onMounted(load)
 <style scoped>
 .wrap {
   max-width: 720px;
+}
+.post-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 .spin {
   display: block;

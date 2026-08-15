@@ -80,8 +80,10 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
   core_agents 表存 bot 人格；AI 代发标识 authorViaAgent；三客户端交叉验证（inspector/Claude/hermes）；
   两级技能词表（分类→技术）；冻结用户级联撤销 refresh token；agent 权限=成员权限继承+审批兜底+审计
 - [ ] R1-F: 前端基建先行（Naive UI + token + 侧边栏 + 通用组件 + 仪表盘，见 FRONTEND.md）
-- [ ] R1: P1 资料页(两级词表+匹配开关) / P2 匹配通知(≤3条/天) / P3 通知UI / P5 内容治理(删+举报) / P6 项目级权限(LEAD校验) / S1 凭证+每日备份 / T1 e2e测试基建
-- [ ] R2: A 内置bot(core_agents+AI署名) / B MCP Server(OAuth2.1+DCR+scope权限点级+双限额) / C /agent接入页 / D 审批工作台
+- [x] R1 全部完成（2026-08-15 生产验收通过）: P1 资料页(两级词表+匹配开关) / P2 匹配通知(≤3条/天) / P3 通知UI / P5 内容治理(删+举报) / P6 项目级权限(LEAD校验) / S1 凭证轮换+每日备份cron / T1 e2e测试(9用例)
+- [ ] R2（下一轮）: A 内置bot(core_agents+AI署名) / B MCP Server(OAuth2.1+DCR+scope权限点级+双限额) / C /agent接入页 / D 审批工作台
+- 生产凭证: JWT_SECRET/DB 密码已轮换为强随机（~/.cyberswat-dev-prod.env 600）；备份 cron 每日 03:00（~backups/cyberswat 30天滚动）
+- 测试: `cd apps/api && DATABASE_URL=...cyberswat_test pnpm test`（vitest+swc 装饰器元数据）
 - [x] GitHub OAuth 配置（2026-08-15）：OAuth App 已创建（CyberSWAT 开发部子站，回调 https://dev.cyberswat.cn/api/auth/github/callback），
   凭据存 ~/.cyberswat-dev-prod.env（权限 600，不入库），容器 --env-file 注入
   - 授权链路已验证：/api/auth/github/login → 302 github.com 授权页（client_id 正确），本地+线上均通

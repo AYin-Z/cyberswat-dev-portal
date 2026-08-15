@@ -27,6 +27,7 @@ model CoreUser {
   links        Json     @default("[]") // [{label, url}] 外链区
   role         CoreRole @default(MEMBER)
   active       Boolean  @default(true)
+  allowMatch   Boolean  @default(true) // 接收项目匹配邀请开关（P2）
   // GitHub OAuth 绑定
   githubId     String?  @unique
   githubToken  String? // OAuth access token（加密存储，M1+）
@@ -364,4 +365,45 @@ model NotificationMention {
 
   @@index([mentionedUserId, createdAt])
   @@map("core_mentions")
+}
+
+// ============ 技能词表（P1：两级 分类→技术） ============
+
+/// 技能分类（Web前端/后端/数据库/安全/算法/AI/运维/测试/产品/设计）
+model CoreSkillCategory {
+  id        String      @id @default(uuid())
+  name      String      @unique
+  sortOrder Int         @default(0)
+  skills    CoreSkill[]
+  createdAt DateTime    @default(now())
+
+  @@map("core_skill_categories")
+}
+
+/// 技能（技术级，name 唯一；用户 skills 数组存规范化 name）
+model CoreSkill {
+  id         String             @id @default(uuid())
+  name       String             @unique
+  categoryId String
+  category   CoreSkillCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime           @default(now())
+
+  @@index([categoryId])
+  @@map("core_skills")
+}
+
+/// 内容举报（P5：帖子/评论/点子/公告 → 部长处置队列）
+model CoreReport {
+  id        String   @id @default(uuid())
+  targetType String // post / comment / idea / announcement
+  targetId  String
+  reason    String // 举报原因（简短）
+  reporterId String // 举报人
+  status    String   @default("PENDING") // PENDING / RESOLVED / DISMISSED
+  resolvedBy String?
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@map("core_reports")
 }

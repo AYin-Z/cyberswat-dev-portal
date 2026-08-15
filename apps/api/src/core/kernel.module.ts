@@ -8,8 +8,11 @@ import { ToolsModule } from './tools/tools.module'
 import { ToolRegistry, type ToolCallContext } from './tools/tool.registry'
 import { AuthModule } from './auth/auth.module'
 import { UsersModule } from './users/users.module'
+import { MeController } from './users/me.controller'
 import { InvitesModule } from './invites/invites.module'
 import { NotificationsModule } from './notifications/notifications.module'
+import { SkillsModule } from './skills/skills.module'
+import { ModerationModule } from './moderation/moderation.module'
 import { GatewayModule } from './gateway/gateway.module'
 import { InviteService } from './invites/invite.service'
 import { HealthController } from './health.controller'
@@ -17,6 +20,7 @@ import { HealthController } from './health.controller'
 import { ExampleModule } from '../capabilities/example/example.module'
 import { AnnouncementModule } from '../capabilities/announcement/announcement.module'
 import { IdeaModule } from '../capabilities/idea-wall/idea.module'
+import { IdeaMatchService } from '../capabilities/idea-wall/idea-match.service'
 import { ProjectModule } from '../capabilities/project/project.module'
 import { CommunityModule } from '../capabilities/community/community.module'
 
@@ -36,6 +40,8 @@ import { CommunityModule } from '../capabilities/community/community.module'
     UsersModule,
     InvitesModule,
     NotificationsModule,
+    SkillsModule,
+    ModerationModule,
     GatewayModule,
     // —— 能力包装配区 ——
     ExampleModule,
@@ -44,7 +50,8 @@ import { CommunityModule } from '../capabilities/community/community.module'
     ProjectModule,
     CommunityModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, MeController],
+  providers: [IdeaMatchService],
   exports: [PluginsModule, PermissionsModule, EventsModule, ToolsModule, AuthModule, UsersModule, InvitesModule, NotificationsModule],
 })
 export class KernelModule implements OnModuleInit {

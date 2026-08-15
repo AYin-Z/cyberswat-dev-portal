@@ -33,6 +33,7 @@ export class UsersService {
     links: Prisma.JsonValue
     role: CoreRole
     active: boolean
+    allowMatch: boolean
     createdAt: Date
   }): InternalUserProfile {
     return {
@@ -49,6 +50,7 @@ export class UsersService {
       email: u.email,
       role: this.mapRole(u.role),
       active: u.active,
+      allowMatch: u.allowMatch,
       createdAt: u.createdAt.toISOString(),
     }
   }
@@ -100,6 +102,34 @@ export class UsersService {
   /** 登录校验用：返回带密码哈希的内部行 */
   async findWithPasswordHash(email: string) {
     return this.prisma.coreUser.findUnique({ where: { email } })
+  }
+
+  /** 更新个人资料（P1：年级/技能/签名/外链/匹配开关；仅本人可调） */
+  async updateProfile(
+    id: string,
+    data: {
+      nickname?: string
+      grade?: string
+      bio?: string
+      skills?: string[]
+      links?: { label: string; url: string }[]
+      avatarUrl?: string
+      allowMatch?: boolean
+    },
+  ): Promise<InternalUserProfile> {
+    const u = await this.prisma.coreUser.update({
+      where: { id },
+      data: {
+        nickname: data.nickname,
+        grade: data.grade,
+        bio: data.bio,
+        skills: data.skills,
+        links: data.links ? (data.links as unknown as Prisma.InputJsonValue) : undefined,
+        avatarUrl: data.avatarUrl,
+        allowMatch: data.allowMatch,
+      },
+    })
+    return this.toInternal(u)
   }
 
   /** 更新 GitHub 绑定（OAuth 回调后同步） */

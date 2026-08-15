@@ -152,6 +152,8 @@ export interface InternalUserProfile extends PublicUserProfile {
   email: string
   role: Role
   active: boolean
+  /** 接收项目匹配邀请开关（P2 匹配池） */
+  allowMatch: boolean
   createdAt: string
 }
 
