@@ -50,6 +50,22 @@ export const themeOverrides: GlobalThemeOverrides = {
     borderRadiusMedium: '8px',
     borderRadiusSmall: '8px',
     fontWeight: '500',
+    // 🔴-2 对比度修复：实心底（primary/success/warning/error）统一深色文字，
+    // 白字 on #58a6ff 仅 2.53:1、on #3fb950 2.54:1、on #f85149 3.35:1 均不达 AA；
+    // 深字 #0d1117 在四色上 5.7~7.6:1（Linear 式「亮底深字」风格，accent 色值零改动）
+    textColorPrimary: '#0d1117',
+    textColorHoverPrimary: '#0d1117',
+    textColorPressedPrimary: '#0d1117',
+    textColorFocusPrimary: '#0d1117',
+    textColorPrimarySuccess: '#0d1117',
+    textColorHoverPrimarySuccess: '#0d1117',
+    textColorPressedPrimarySuccess: '#0d1117',
+    textColorPrimaryError: '#0d1117',
+    textColorHoverPrimaryError: '#0d1117',
+    textColorPressedPrimaryError: '#0d1117',
+    textColorPrimaryWarning: '#0d1117',
+    textColorHoverPrimaryWarning: '#0d1117',
+    textColorPressedPrimaryWarning: '#0d1117',
     textColorSecondary: tokens.ink,
     borderSecondary: `1px solid ${tokens.hairline}`,
     borderHoverSecondary: `1px solid ${tokens.hairlineStrong}`,

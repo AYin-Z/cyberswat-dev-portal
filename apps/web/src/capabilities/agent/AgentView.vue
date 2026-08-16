@@ -259,11 +259,21 @@ onMounted(() => {
 .btn-primary {
   display: inline-block;
   background: var(--cs-accent);
-  color: #fff;
+  color: var(--cs-canvas);
   padding: 8px 18px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
+  cursor: pointer; /* 🟢-7：补交互反馈 */
+  border: none;
+  transition: background 0.15s;
+}
+.btn-primary:hover {
+  background: var(--cs-accent-hover);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .code {
   background: var(--cs-canvas);
@@ -285,6 +295,11 @@ onMounted(() => {
   padding: 4px 14px;
   font-size: 12px;
   cursor: pointer;
+  transition: background 0.15s, color 0.15s; /* 🟢-7 */
+}
+.copy-btn:hover {
+  background: var(--cs-surface-3);
+  color: var(--cs-ink);
 }
 .tools {
   display: flex;

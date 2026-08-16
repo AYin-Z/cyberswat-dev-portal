@@ -10,7 +10,7 @@ describe('EmptyState.vue', () => {
   it('渲染 text 与默认图标', () => {
     const w = mount(EmptyState, { props: { text: '暂无任务' } })
     expect(w.find('.text').text()).toBe('暂无任务')
-    expect(w.find('.icon').text()).toBe('◇')
+    expect(w.find('.icon').text()).toBe('⬡') // 🟢-12：与品牌字形统一
   })
 
   it('自定义 icon 覆盖默认值', () => {

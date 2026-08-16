@@ -3,16 +3,22 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { api } from '../../lib/api'
-import { NTag, NInput, NButton, NSpin, useMessage } from 'naive-ui'
+import { NTag, NInput, NButton, NSpin, NModal, NForm, NFormItem, useDialog, useMessage } from 'naive-ui'
 
 const auth = useAuthStore()
 const route = useRoute()
 const message = useMessage()
+const dialog = useDialog()
 const post = ref<any>(null)
 const error = ref('')
 const loading = ref(true)
 const commentText = ref('')
 const submitting = ref(false)
+
+// 🟡-4：举报原因弹窗（替代原生 window.prompt）
+const showReport = ref(false)
+const reportReason = ref('')
+const reporting = ref(false)
 
 const boardLabel: Record<string, string> = { GENERAL: '灌水', HELP: '求助', SHARE: '分享', RECRUIT: '招人' }
 
@@ -54,28 +60,47 @@ async function like() {
 }
 
 async function report() {
-  const reason = window.prompt('举报原因：') ?? ''
-  if (!reason.trim()) return
+  reportReason.value = ''
+  showReport.value = true
+}
+
+async function confirmReport() {
+  if (!reportReason.value.trim()) {
+    message.warning('请填写举报原因')
+    return
+  }
+  reporting.value = true
   try {
     await api(`/api/moderation/report/post/${post.value.id}`, {
       method: 'POST',
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({ reason: reportReason.value.trim() }),
     })
     message.success('已提交举报，部长将处置')
+    showReport.value = false
   } catch (e) {
     message.error((e as Error).message)
+  } finally {
+    reporting.value = false
   }
 }
 
 async function removePost() {
-  if (!window.confirm('确认删除该帖子？（软删除，可留审计）')) return
-  try {
-    await api(`/api/moderation/post/${post.value.id}`, { method: 'DELETE' })
-    message.success('已删除')
-    await load()
-  } catch (e) {
-    message.error((e as Error).message)
-  }
+  // 🟡-4：删除确认走 n-dialog（替代原生 window.confirm）
+  dialog.warning({
+    title: '删除帖子',
+    content: '确认删除该帖子？（软删除，可留审计）',
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await api(`/api/moderation/post/${post.value.id}`, { method: 'DELETE' })
+        message.success('已删除')
+        await load()
+      } catch (e) {
+        message.error((e as Error).message)
+      }
+    },
+  })
 }
 
 onMounted(load)
@@ -130,6 +155,23 @@ onMounted(load)
         <n-button type="primary" :loading="submitting" @click="comment">评论</n-button>
       </div>
     </template>
+
+    <!-- 🟡-4：举报原因弹窗 -->
+    <n-modal v-model:show="showReport" preset="card" title="举报帖子" style="width: 440px; max-width: calc(100vw - 32px)">
+      <n-form label-placement="top">
+        <n-form-item label="举报原因">
+          <n-input
+            v-model:value="reportReason"
+            type="textarea"
+            :rows="3"
+            placeholder="违规内容 / 原因说明"
+            maxlength="200"
+            show-count
+          />
+        </n-form-item>
+        <n-button type="error" block :loading="reporting" @click="confirmReport">提交举报</n-button>
+      </n-form>
+    </n-modal>
   </section>
 </template>
 
@@ -138,7 +180,7 @@ onMounted(load)
   max-width: 720px;
 }
 .ai-badge {
-  font-size: 11px;
+  font-size: 12px; /* 🟡-11：11px → 12px */
   color: var(--cs-accent);
   border: 1px solid var(--cs-hairline);
   border-radius: 4px;
@@ -177,7 +219,7 @@ onMounted(load)
   white-space: pre-wrap;
 }
 .sec {
-  font-size: 16px;
+  font-size: 15px; /* 🟡-11：16px → 15px（cardTitle 档） */
   font-weight: 600;
   margin: 24px 0 12px;
 }

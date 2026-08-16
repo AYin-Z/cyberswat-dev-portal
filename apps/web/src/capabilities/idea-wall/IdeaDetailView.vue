@@ -182,7 +182,7 @@ onMounted(load)
   margin: 16px 0;
 }
 .sec {
-  font-size: 16px;
+  font-size: 15px; /* 🟡-11：16px → 15px（cardTitle 档） */
   font-weight: 600;
   margin: 24px 0 12px;
 }

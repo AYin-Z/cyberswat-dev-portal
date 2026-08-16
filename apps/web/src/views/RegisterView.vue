@@ -60,9 +60,9 @@ async function submit() {
       <p v-if="error" class="error">{{ error }}</p>
 
       <form class="form" @submit.prevent="submit">
-        <input v-model="nickname" placeholder="昵称（对外展示）" required :disabled="!inviteToken" />
-        <input v-model="email" type="email" placeholder="邮箱" required :disabled="!inviteToken" />
-        <input v-model="password" type="password" placeholder="密码（至少 8 位）" minlength="8" required :disabled="!inviteToken" />
+        <input v-model="nickname" placeholder="昵称（对外展示）" aria-label="昵称" required :disabled="!inviteToken" />
+        <input v-model="email" type="email" placeholder="邮箱" aria-label="邮箱" required :disabled="!inviteToken" />
+        <input v-model="password" type="password" placeholder="密码（至少 8 位）" aria-label="密码" minlength="8" required :disabled="!inviteToken" />
         <button type="submit" class="btn primary" :disabled="!inviteToken || submitting">
           {{ submitting ? '注册中…' : '注册' }}
         </button>
@@ -77,7 +77,7 @@ async function submit() {
 
 <style scoped>
 .auth-wrap {
-  min-height: 100vh;
+  min-height: 100dvh; /* 🟡-7：100vh → 100dvh，避免移动端地址栏遮挡 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,7 +88,7 @@ async function submit() {
   max-width: 360px;
   background: var(--cs-surface-1);
   border: 1px solid var(--cs-hairline);
-  border-radius: 10px;
+  border-radius: 8px; /* 🟢：10px 不在 6/8/999 体系内 → 8px */
   padding: 32px;
 }
 .brand {
@@ -110,7 +110,7 @@ async function submit() {
   color: var(--cs-accent);
 }
 .title {
-  font-size: 22px;
+  font-size: 24px; /* 🟡-11：22px → 24px（pageTitle 档） */
   font-weight: 600;
   letter-spacing: -0.4px;
 }
@@ -161,7 +161,7 @@ async function submit() {
 .btn.primary {
   background: var(--cs-accent);
   border: none;
-  color: #fff;
+  color: var(--cs-canvas);
 }
 .btn.primary:hover {
   background: var(--cs-accent-hover);

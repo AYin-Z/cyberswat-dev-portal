@@ -45,7 +45,15 @@ const meta = computed(() => {
 </script>
 
 <template>
-  <span class="badge" :style="{ color: meta.color, borderColor: `${meta.color}55` }">
+  <!-- 🟡-3 修复：`var(--x)55` 拼接非法 → color-mix 实现「语义色 8% 透明底 + 语义色描边」设计意图 -->
+  <span
+    class="badge"
+    :style="{
+      color: meta.color,
+      borderColor: `color-mix(in srgb, ${meta.color} 55%, transparent)`,
+      background: `color-mix(in srgb, ${meta.color} 8%, transparent)`,
+    }"
+  >
     {{ meta.label }}
   </span>
 </template>

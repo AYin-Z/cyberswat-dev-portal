@@ -5,10 +5,10 @@ import { composeUi } from '../ui/contribution'
 // 组合全部能力包的 UI 贡献
 const { menu, routes } = composeUi(uiContributions)
 
-// 给能力包路由补面包屑 title（顶栏显示）
+// 给能力包路由补面包屑 title（顶栏显示）；🟢-8：合并而非覆盖 meta（详情路由自带 title）
 const titledRoutes = routes.map((r) => {
   const menuItem = menu.find((m) => m.path === r.path)
-  return { ...r, meta: { title: menuItem?.label ?? '' } }
+  return { ...r, meta: { ...(r.meta ?? {}), title: menuItem?.label ?? (r.meta?.title as string | undefined) ?? '' } }
 })
 
 export const router = createRouter({

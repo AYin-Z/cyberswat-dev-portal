@@ -34,7 +34,7 @@ export const tokens = {
   /** 角色色（仅语义用途） */
   accent: '#58a6ff', // 唯一强调色（主站同款）
   accentHover: '#79b8ff',
-  onAccent: '#ffffff',
+  onAccent: '#0d1117', // accent 底上的文字：深字（对比 7.5:1）——🔴-2 修复（白字仅 2.53:1 不达 AA）
   success: '#3fb950',
   warning: '#d29922',
   danger: '#f85149',

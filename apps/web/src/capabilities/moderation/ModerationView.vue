@@ -20,6 +20,7 @@ interface ReportItem {
 const message = useMessage()
 const reports = ref<ReportItem[]>([])
 const loading = ref(true)
+const error = ref('') // 🟡-5：错误态独立渲染，不再冒充空态
 
 const typeLabel: Record<string, string> = {
   post: '帖子',
@@ -30,10 +31,11 @@ const typeLabel: Record<string, string> = {
 
 async function load() {
   loading.value = true
+  error.value = ''
   try {
     reports.value = await api<ReportItem[]>('/api/moderation/reports')
   } catch (e) {
-    message.error((e as Error).message)
+    error.value = (e as Error).message
   } finally {
     loading.value = false
   }
@@ -89,6 +91,11 @@ onMounted(load)
     <page-header title="内容处置" sub="举报队列 — 删除违规内容或忽略" />
 
     <n-spin v-if="loading" class="spin" />
+    <!-- 🟡-5：加载失败渲染错误区块（带重试），不再显示「暂无待处置举报」误导 -->
+    <div v-else-if="error" class="error-box">
+      <p class="error-text">加载失败：{{ error }}</p>
+      <n-button size="small" @click="load">重试</n-button>
+    </div>
     <n-data-table
       v-else
       :columns="columns"
@@ -97,7 +104,7 @@ onMounted(load)
       size="small"
       class="table"
     />
-    <empty-state v-if="!reports.length && !loading" text="暂无待处置举报" />
+    <empty-state v-if="!reports.length && !loading && !error" text="暂无待处置举报" />
   </section>
 </template>
 
@@ -105,6 +112,20 @@ onMounted(load)
 .spin {
   display: block;
   margin: 48px auto;
+}
+.error-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-danger);
+  border-radius: 8px;
+}
+.error-text {
+  color: var(--cs-danger);
+  font-size: 13px;
+  flex: 1;
 }
 .table {
   background: var(--cs-surface-1);

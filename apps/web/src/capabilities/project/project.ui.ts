@@ -7,12 +7,12 @@ import TaskBoardView from './TaskBoardView.vue'
 export const projectUi: UiContribution = {
   pluginId: 'dev.project',
   menu: [
-    { path: '/projects', label: '项目' },
-    { path: '/tasks', label: '任务' },
+    { path: '/projects', label: '项目', icon: 'FolderOpenOutline' },
+    { path: '/tasks', label: '任务', icon: 'CheckmarkDoneOutline' },
   ],
   routes: [
     { path: '/projects', name: 'projects', component: ProjectListView },
-    { path: '/projects/:id', name: 'project-detail', component: ProjectDetailView },
+    { path: '/projects/:id', name: 'project-detail', component: ProjectDetailView, meta: { title: '项目详情' } },
     { path: '/tasks', name: 'tasks', component: TaskBoardView },
   ],
 }

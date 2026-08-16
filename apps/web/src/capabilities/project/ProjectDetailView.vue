@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { api } from '../../lib/api'
 import StatusBadge from '../../components/StatusBadge.vue'
-import { NTag, NSpin, NButton, NProgress, useMessage } from 'naive-ui'
+import { NTag, NSpin, NButton, NProgress, NModal, NInput, NForm, NFormItem, useMessage } from 'naive-ui'
 
 interface TaskItem {
   id: string
@@ -46,16 +46,39 @@ async function claim(t: TaskItem) {
     message.error((e as Error).message)
   }
 }
-async function submit(t: TaskItem) {
-  const note = window.prompt('提交说明（PR 链接/实现简述）：') ?? ''
+// 🟡-4：提交说明弹窗（替代原生 window.prompt）
+const showSubmitNote = ref(false)
+const submitNoteTask = ref<TaskItem | null>(null)
+const submitNoteText = ref('')
+const submittingNote = ref(false)
+
+function openSubmitNote(t: TaskItem) {
+  submitNoteTask.value = t
+  submitNoteText.value = ''
+  showSubmitNote.value = true
+}
+
+async function confirmSubmitNote() {
+  const t = submitNoteTask.value
+  if (!t) return
+  if (!submitNoteText.value.trim()) {
+    message.warning('请填写提交说明（PR 链接/实现简述）')
+    return
+  }
+  submittingNote.value = true
   try {
-    await api(`/api/tasks/${t.id}/submit`, { method: 'POST', body: JSON.stringify({ note }) })
+    await api(`/api/tasks/${t.id}/submit`, { method: 'POST', body: JSON.stringify({ note: submitNoteText.value.trim() }) })
     message.success('已提交验收')
+    showSubmitNote.value = false
+    submitNoteTask.value = null
     await load()
   } catch (e) {
     message.error((e as Error).message)
+  } finally {
+    submittingNote.value = false
   }
 }
+
 async function review(t: TaskItem, approve: boolean) {
   try {
     await api(`/api/tasks/${t.id}/review`, { method: 'POST', body: JSON.stringify({ approve }) })
@@ -92,7 +115,7 @@ onMounted(load)
         <n-progress
           type="line"
           :percentage="project.taskCount ? Math.round((project.doneTaskCount / project.taskCount) * 100) : 0"
-          :height="6"
+          :height="4"
           :show-indicator="false"
           class="progress"
         />
@@ -121,7 +144,7 @@ onMounted(load)
           </p>
           <div class="t-actions">
             <n-button v-if="t.status === 'TODO'" size="tiny" type="primary" quaternary @click="claim(t)">认领</n-button>
-            <n-button v-if="t.status === 'IN_PROGRESS'" size="tiny" type="primary" quaternary @click="submit(t)">提交验收</n-button>
+            <n-button v-if="t.status === 'IN_PROGRESS'" size="tiny" type="primary" quaternary @click="openSubmitNote(t)">提交验收</n-button>
             <template v-if="t.status === 'REVIEW' && auth.user?.id === t.creator.id">
               <n-button size="tiny" type="success" quaternary @click="review(t, true)">通过</n-button>
               <n-button size="tiny" type="error" quaternary @click="review(t, false)">驳回</n-button>
@@ -130,6 +153,23 @@ onMounted(load)
         </div>
       </div>
     </template>
+
+    <!-- 🟡-4：提交说明弹窗 -->
+    <n-modal v-model:show="showSubmitNote" preset="card" title="提交验收" style="width: 480px; max-width: calc(100vw - 32px)">
+      <n-form label-placement="top">
+        <n-form-item label="提交说明">
+          <n-input
+            v-model:value="submitNoteText"
+            type="textarea"
+            :rows="3"
+            placeholder="PR 链接 / 实现简述"
+            maxlength="500"
+            show-count
+          />
+        </n-form-item>
+        <n-button type="primary" block :loading="submittingNote" @click="confirmSubmitNote">提交</n-button>
+      </n-form>
+    </n-modal>
   </section>
 </template>
 
@@ -183,7 +223,7 @@ onMounted(load)
   flex: 1;
 }
 .sec {
-  font-size: 16px;
+  font-size: 15px; /* 🟡-11：16px → 15px（cardTitle 档） */
   font-weight: 600;
   margin: 20px 0 12px;
 }

@@ -114,7 +114,7 @@ onMounted(load)
   font-size: 12px;
 }
 .c-title {
-  font-size: 16px;
+  font-size: 15px; /* 🟡-11：16px → 15px（cardTitle 档） */
   font-weight: 600;
   letter-spacing: -0.3px;
   margin-bottom: 8px;

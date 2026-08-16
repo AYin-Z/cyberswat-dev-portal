@@ -69,8 +69,8 @@ onMounted(() => {
       <p v-if="error" class="error">{{ error }}</p>
 
       <form class="form" @submit.prevent="submit">
-        <input v-model="email" type="email" placeholder="邮箱" autocomplete="email" required />
-        <input v-model="password" type="password" placeholder="密码" autocomplete="current-password" required />
+        <input v-model="email" type="email" placeholder="邮箱" aria-label="邮箱" autocomplete="email" required />
+        <input v-model="password" type="password" placeholder="密码" aria-label="密码" autocomplete="current-password" required />
         <button type="submit" class="btn primary" :disabled="busy">
           {{ busy ? '登录中…' : '登录' }}
         </button>
@@ -90,7 +90,7 @@ onMounted(() => {
 
 <style scoped>
 .auth-wrap {
-  min-height: 100vh;
+  min-height: 100dvh; /* 🟡-7：100vh → 100dvh，避免移动端地址栏遮挡 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -101,7 +101,7 @@ onMounted(() => {
   max-width: 360px;
   background: var(--cs-surface-1);
   border: 1px solid var(--cs-hairline);
-  border-radius: 10px;
+  border-radius: 8px; /* 🟢：10px 不在 6/8/999 体系内 → 8px */
   padding: 32px;
 }
 .brand {
@@ -123,7 +123,7 @@ onMounted(() => {
   color: var(--cs-accent);
 }
 .title {
-  font-size: 22px;
+  font-size: 24px; /* 🟡-11：22px → 24px（pageTitle 档） */
   font-weight: 600;
   letter-spacing: -0.4px;
 }
@@ -167,7 +167,7 @@ onMounted(() => {
 .btn.primary {
   background: var(--cs-accent);
   border: none;
-  color: #fff;
+  color: var(--cs-canvas);
 }
 .btn.primary:hover {
   background: var(--cs-accent-hover);

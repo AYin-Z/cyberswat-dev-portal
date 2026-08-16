@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../lib/api'
+import { NSpin } from 'naive-ui'
 import PageHeader from '../components/PageHeader.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import EmptyState from '../components/EmptyState.vue'
@@ -88,8 +89,12 @@ onMounted(load)
       </template>
     </page-header>
 
-    <!-- KPI 行 -->
-    <div class="kpi-row">
+    <!-- 🟡-5 修复：首载显示 loading，不再闪现「暂无任务」空态 -->
+    <n-spin v-if="loading" class="spin" />
+
+    <template v-else>
+      <!-- KPI 行 -->
+      <div class="kpi-row">
       <div class="kpi">
         <span class="num tnum">{{ kpi.todo }}</span>
         <span class="label">待接单</span>
@@ -161,6 +166,7 @@ onMounted(load)
         </section>
       </div>
     </div>
+    </template>
   </section>
 
   <!-- 未登录：品牌入口 -->
@@ -183,6 +189,10 @@ onMounted(load)
   font-size: 13px;
   margin-left: 12px;
 }
+.spin {
+  display: block;
+  margin: 48px auto;
+}
 .kpi-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -199,7 +209,7 @@ onMounted(load)
   gap: 2px;
 }
 .num {
-  font-size: 24px;
+  font-size: 28px; /* 🟢：24px → 28px，强化 KPI 数据层级 */
   font-weight: 600;
   letter-spacing: -0.4px;
 }
@@ -277,7 +287,7 @@ onMounted(load)
   font-weight: 500;
 }
 .n-type {
-  font-size: 11px;
+  font-size: 12px; /* 🟡-11：11px → 12px */
   color: var(--cs-accent);
   border: 1px solid var(--cs-hairline);
   border-radius: 4px;
@@ -285,7 +295,7 @@ onMounted(load)
   flex-shrink: 0;
 }
 .imp {
-  font-size: 11px;
+  font-size: 12px; /* 🟡-11：11px → 12px */
   color: var(--cs-warning);
   border: 1px solid var(--cs-warning);
   border-radius: 4px;
@@ -294,6 +304,16 @@ onMounted(load)
 }
 .unread {
   color: var(--cs-ink);
+}
+
+/* 🟡-1：窄屏兜底——KPI 2 列、双栏改单列 */
+@media (max-width: 900px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cols {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 未登录 hero */
@@ -337,11 +357,11 @@ onMounted(load)
 }
 .hero-btn.primary {
   background: var(--cs-accent);
-  color: #fff;
+  color: var(--cs-canvas);
 }
 .hero-btn.primary:hover {
   background: var(--cs-accent-hover);
-  color: #fff;
+  color: var(--cs-canvas);
 }
 .hero-btn.ghost {
   border: 1px solid var(--cs-hairline);

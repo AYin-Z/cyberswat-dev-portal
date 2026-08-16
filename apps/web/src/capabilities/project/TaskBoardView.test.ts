@@ -152,9 +152,8 @@ describe('TaskBoardView.vue', () => {
     expect((claimCall![1] as RequestInit).method).toBe('POST')
   })
 
-  it('状态机：IN_PROGRESS→REVIEW 触发 submit 分支（提交说明走 window.prompt）', async () => {
+  it('状态机：IN_PROGRESS→REVIEW 打开提交说明弹窗 → 填写后确认触发 submit（🟡-4 替代 prompt）', async () => {
     const fetchMock = vi.fn()
-    vi.spyOn(window, 'prompt').mockReturnValue('PR #42')
     const w = mountBoard(fetchMock)
     await flushPromises()
 
@@ -167,11 +166,47 @@ describe('TaskBoardView.vue', () => {
     })
     await flushPromises()
 
+    // 弹窗打开（teleport 到 body），此时尚未请求 API
+    const modalInput = document.querySelector('.n-modal textarea') as HTMLTextAreaElement | null
+    expect(modalInput).toBeTruthy()
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/tasks/t2/submit'))).toBe(false)
+
+    modalInput!.value = 'PR #42'
+    modalInput!.dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+    const confirmBtn = Array.from(document.querySelectorAll('.n-modal button')).find((b) => b.textContent === '提交')
+    expect(confirmBtn).toBeTruthy()
+    confirmBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await flushPromises()
+
     const submitCall = fetchMock.mock.calls.find((c) => String(c[0]).includes('/api/tasks/t2/submit'))
     expect(submitCall).toBeTruthy()
     const body = JSON.parse(String((submitCall![1] as RequestInit).body))
     expect(body).toHaveProperty('note')
     expect(body.note).toBe('PR #42')
+  })
+
+  it('提交说明弹窗：空内容点提交 → 不请求 API，弹 warning 校验', async () => {
+    const fetchMock = vi.fn()
+    const w = mountBoard(fetchMock)
+    await flushPromises()
+
+    const cols = w.findAllComponents(draggable)
+    const reviewCol = cols[2]
+    await reviewCol.vm.$emit('end', {
+      item: { dataset: { id: 't2' } },
+      from: { dataset: { col: 'IN_PROGRESS' } },
+      to: { dataset: { col: 'REVIEW' } },
+    })
+    await flushPromises()
+
+    const confirmBtn = Array.from(document.querySelectorAll('.n-modal button')).find((b) => b.textContent === '提交')
+    confirmBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await flushPromises()
+
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/tasks/t2/submit'))).toBe(false)
+    const msg = document.body.querySelector('.n-message')
+    expect(msg?.textContent).toContain('请填写提交说明')
   })
 
   it('状态机：REVIEW→DONE 触发 review 分支（approve: true）', async () => {

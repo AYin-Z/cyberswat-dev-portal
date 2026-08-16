@@ -6,10 +6,10 @@ import PostNewView from './PostNewView.vue'
 /** 社区能力包 UI 声明 — 与后端 manifest (dev.community) 对齐 */
 export const communityUi: UiContribution = {
   pluginId: 'dev.community',
-  menu: [{ path: '/posts', label: '社区' }],
+  menu: [{ path: '/posts', label: '社区', icon: 'ChatbubblesOutline' }],
   routes: [
     { path: '/posts', name: 'posts', component: PostListView },
     { path: '/posts/new', name: 'post-new', component: PostNewView },
-    { path: '/posts/:id', name: 'post-detail', component: PostDetailView },
+    { path: '/posts/:id', name: 'post-detail', component: PostDetailView, meta: { title: '帖子详情' } },
   ],
 }

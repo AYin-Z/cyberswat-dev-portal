@@ -19,12 +19,15 @@ interface PendingItem {
 const message = useMessage()
 const items = ref<PendingItem[]>([])
 const loading = ref(true)
+const error = ref('') // 🟡-5：错误态独立渲染，不再冒充空态
 
 async function load() {
+  loading.value = true
+  error.value = ''
   try {
     items.value = await api<PendingItem[]>('/api/tools/pending')
   } catch (e) {
-    message.error((e as Error).message)
+    error.value = (e as Error).message
   } finally {
     loading.value = false
   }
@@ -91,6 +94,11 @@ onMounted(load)
     <page-header title="审批工作台" sub="agent 的危险操作（发布/指派/邀请）在此人工确认后执行" />
 
     <n-spin v-if="loading" class="spin" />
+    <!-- 🟡-5：加载失败渲染错误区块（带重试），不再显示「没有待审批的操作」误导 -->
+    <div v-else-if="error" class="error-box">
+      <p class="error-text">加载失败：{{ error }}</p>
+      <n-button size="small" @click="load">重试</n-button>
+    </div>
     <n-data-table
       v-else
       :columns="columns"
@@ -99,7 +107,7 @@ onMounted(load)
       size="small"
       class="table"
     />
-    <empty-state v-if="!items.length && !loading" text="没有待审批的操作" />
+    <empty-state v-if="!items.length && !loading && !error" text="没有待审批的操作" />
   </section>
 </template>
 
@@ -107,6 +115,20 @@ onMounted(load)
 .spin {
   display: block;
   margin: 48px auto;
+}
+.error-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-danger);
+  border-radius: 8px;
+}
+.error-text {
+  color: var(--cs-danger);
+  font-size: 13px;
+  flex: 1;
 }
 .table {
   background: var(--cs-surface-1);

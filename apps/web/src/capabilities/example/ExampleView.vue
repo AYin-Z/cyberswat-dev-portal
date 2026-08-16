@@ -11,8 +11,8 @@
 </template>
 
 <style scoped>
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+.card { background: var(--cs-surface-1); border: 1px solid var(--cs-hairline); border-radius: 8px; padding: 24px; }
 .card h1 { margin-bottom: 12px; font-size: 18px; }
-.card p { color: var(--muted); line-height: 1.8; font-size: 14px; }
-code { background: #21262d; padding: 2px 6px; border-radius: 4px; color: var(--accent); }
+.card p { color: var(--cs-ink-muted); line-height: 1.8; font-size: 14px; }
+code { background: var(--cs-surface-2); padding: 2px 6px; border-radius: 4px; color: var(--cs-accent); }
 </style>

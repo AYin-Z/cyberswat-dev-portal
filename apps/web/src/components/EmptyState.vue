@@ -12,7 +12,7 @@ const emit = defineEmits<{ (e: 'action'): void }>()
 
 <template>
   <div class="empty">
-    <span class="icon">{{ icon ?? '◇' }}</span>
+    <span class="icon">{{ icon ?? '⬡' }}</span>
     <p class="text">{{ text }}</p>
     <button v-if="cta" class="cta" @click="emit('action')">{{ cta }}</button>
   </div>
