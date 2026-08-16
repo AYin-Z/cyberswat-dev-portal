@@ -214,6 +214,8 @@ onMounted(load)
           item-key="id"
           class="col-body"
           :animation="150"
+          :delay="150"
+          :touch-start-threshold="5"
           :data-col="col.key"
           @end="(e: any) => {
             // 🔴-3：end 事件只派发到源列——用 e.from/e.to 的 data-col 判定真实目标列
@@ -348,6 +350,7 @@ onMounted(load)
   padding: 10px 12px;
   cursor: grab;
   transition: border-color 0.15s;
+  touch-action: manipulation; /* 🟡-7：触屏下滚动优先，拖拽需长按 */
 }
 .card:hover {
   border-color: var(--cs-hairline-strong);
@@ -401,6 +404,13 @@ onMounted(load)
   color: var(--cs-ink);
   background: var(--cs-surface-3);
 }
+/* 🟡-6：触屏下操作按钮 ≥40px */
+@media (max-width: 768px) {
+  .card-more {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
 
 /* 🟡-1：窄屏兜底——看板改横向滚动，每列最小 260px */
 @media (max-width: 900px) {
@@ -410,6 +420,9 @@ onMounted(load)
     overflow-x: auto;
     padding-bottom: 8px;
     scroll-snap-type: x proximity;
+    /* 🟡-9：右缘渐隐提示可横滑（触屏滚动条天然隐藏） */
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
   }
   .col {
     flex: 0 0 260px;

@@ -78,10 +78,11 @@ const columns: DataTableColumns<PendingItem> = [
     title: '操作',
     key: 'actions',
     width: 150,
+    fixed: 'right', // 🔴-1：移动端操作列常驻可见
     render: (r) =>
       h('div', { class: 'acts' }, [
-        h(NButton, { size: 'tiny', type: 'success', onClick: () => resolve(r.id, true) }, { default: () => '批准' }),
-        h(NButton, { size: 'tiny', type: 'error', quaternary: true, onClick: () => resolve(r.id, false) }, { default: () => '驳回' }),
+        h(NButton, { size: 'small', type: 'success', onClick: () => resolve(r.id, true) }, { default: () => '批准' }),
+        h(NButton, { size: 'small', type: 'error', quaternary: true, onClick: () => resolve(r.id, false) }, { default: () => '驳回' }),
       ]),
   },
 ]
@@ -105,6 +106,7 @@ onMounted(load)
       :data="items"
       :bordered="false"
       size="small"
+      :scroll-x="650"
       class="table"
     />
     <empty-state v-if="!items.length && !loading && !error" text="没有待审批的操作" />
@@ -134,7 +136,13 @@ onMounted(load)
   background: var(--cs-surface-1);
   border: 1px solid var(--cs-hairline);
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto; /* 🔴-1：允许横向滚动（桌面 overflow:hidden 曾裁掉操作列） */
+}
+/* 🔴-1/🟡-6：触屏下操作按钮放大 */
+@media (max-width: 768px) {
+  .acts button {
+    min-height: 40px;
+  }
 }
 .acts {
   display: flex;

@@ -188,6 +188,8 @@ onMounted(load)
   color: var(--cs-accent);
   font-size: 13px;
   margin-left: 12px;
+  padding: 8px 4px; /* 🟢-12：行内热区放大 */
+  display: inline-block;
 }
 .spin {
   display: block;
@@ -313,6 +315,12 @@ onMounted(load)
   }
   .cols {
     grid-template-columns: 1fr;
+  }
+}
+/* 🟢-13：超窄屏品牌标题保持单行 */
+@media (max-width: 400px) {
+  .hero-title {
+    font-size: 32px;
   }
 }
 

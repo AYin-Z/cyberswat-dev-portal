@@ -96,7 +96,7 @@ onMounted(load)
   border: 1px solid var(--cs-warning);
   color: var(--cs-warning);
   border-radius: 6px;
-  padding: 2px 10px;
+  padding: 8px 12px; /* 🟡-6：22px → ~38px */
   font-size: 12px;
   cursor: pointer;
   flex-shrink: 0;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { NConfigProvider, NLayout, NLayoutSider, NLayoutHeader, NLayoutContent, NMenu, NAvatar, NButton, NDropdown, NMessageProvider, NDialogProvider, darkTheme, zhCN, dateZhCN } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
@@ -31,7 +31,7 @@ const collapsed = ref(false)
 // 🟡-7：认证页（登录/注册）脱离应用壳，全屏干净画布
 const isAuthPage = computed(() => route.path === '/login' || route.path === '/register')
 
-// 🟡-1：窄屏默认折叠侧栏（用户仍可手动展开）
+// 🟡-1/🟡-4：窄屏默认折叠侧栏；展开态在移动端为抽屉（absolute + 遮罩 + 选中自动收起）
 const isNarrow = ref(false)
 function onResize() {
   isNarrow.value = window.innerWidth < 768
@@ -42,6 +42,14 @@ onMounted(() => {
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => window.removeEventListener('resize', onResize))
+
+// 🟡-4：窄屏下路由切换后自动收起抽屉（点完菜单即收起）
+watch(
+  () => route.path,
+  () => {
+    if (isNarrow.value) collapsed.value = true
+  },
+)
 
 // 菜单：能力包 manifest 注入（ui.menu）+ 固定首页；🟡-2 按角色过滤（roles 省略 = 全员可见）；🟡-8 全项带图标
 const menuOptions = computed<MenuOption[]>(() => [
@@ -90,14 +98,17 @@ function onUserSelect(key: string) {
     <n-message-provider><n-dialog-provider>
     <n-layout has-sider class="shell" :class="{ bare: isAuthPage }">
       <!-- 🟡-7：认证页（登录/注册）不渲染侧栏与顶栏，全屏干净画布 -->
+      <!-- 🟡-4：移动端抽屉——折叠态 56px 常驻（sticky 导航锚点），展开态 absolute 浮层 + 遮罩 -->
       <n-layout-sider
         v-if="!isAuthPage"
         bordered
         collapse-mode="width"
-        :collapsed-width="64"
+        :collapsed-width="56"
         :width="220"
         :collapsed="collapsed"
+        :position="isNarrow && !collapsed ? 'absolute' : 'static'"
         show-trigger="bar"
+        class="app-sider"
         @collapse="collapsed = true"
         @expand="collapsed = false"
       >
@@ -105,12 +116,14 @@ function onUserSelect(key: string) {
           <span class="logo">⬡</span>
           <span v-if="!collapsed" class="name">CYBERSWAT<span class="dev">·DEV</span></span>
         </div>
-        <n-menu :options="menuOptions" :value="activeKey" :collapsed="collapsed" :collapsed-width="64" />
+        <n-menu :options="menuOptions" :value="activeKey" :collapsed="collapsed" :collapsed-width="56" />
         <div v-if="!collapsed" class="sider-foot">
           <!-- 🟢-9：侧栏身份信息收敛为版本号（顶栏已有身份+下拉） -->
           <span class="ver mono">dev · v1.2</span>
         </div>
       </n-layout-sider>
+      <!-- 🟡-4：抽屉遮罩（点击收起） -->
+      <div v-if="isNarrow && !collapsed" class="sider-mask" @click="collapsed = true" />
 
       <n-layout>
         <!-- 顶栏 -->
@@ -145,6 +158,7 @@ function onUserSelect(key: string) {
 <style scoped>
 .shell {
   height: 100vh;
+  height: 100dvh; /* 🔴-3：iOS 地址栏动态视口——内层滚动容器下 100vh 会让底部内容不可达 */
 }
 .brand {
   display: flex;
@@ -193,15 +207,25 @@ function onUserSelect(key: string) {
   justify-content: space-between;
   padding: 0 24px;
   height: 56px;
+  position: sticky; /* 🟡-10：内层滚动容器内吸顶——滚动后通知/用户菜单常驻 */
+  top: 0;
+  z-index: 20;
+  background: var(--cs-canvas);
 }
 .crumb {
   font-size: 13px;
   color: var(--cs-ink-subtle);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .top-right {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0; /* 🟢-17：长昵称不挤压标题 */
 }
 .user-btn {
   display: flex;
@@ -245,10 +269,32 @@ function onUserSelect(key: string) {
   }
 }
 
-/* 🟡-1：窄屏内容区缩小内边距 */
-@media (max-width: 640px) {
+/* 🟡-1：窄屏内容区缩小内边距（断点与侧栏折叠统一为 768，🟢-18） */
+@media (max-width: 768px) {
   .content {
     padding: 16px;
+  }
+  /* 🟡-4：抽屉遮罩 */
+  .sider-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 30;
+  }
+  /* 🟡-4：抽屉浮层高于遮罩；折叠态 56px 图标栏 sticky 常驻 */
+  .app-sider {
+    z-index: 40;
+  }
+  .app-sider:not(.n-layout-sider--collapsed) {
+    position: absolute !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+  }
+  .app-sider.n-layout-sider--collapsed {
+    position: sticky !important;
+    top: 0;
+    height: 100dvh;
   }
 }
 </style>

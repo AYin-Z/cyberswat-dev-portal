@@ -233,6 +233,12 @@ onMounted(() => {
   gap: 12px;
   margin-bottom: 12px;
 }
+/* 🟡-8：窄屏单列（375px 下双栏每列仅 ~165px 不可读） */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
 .panel {
   background: var(--cs-surface-1);
   border: 1px solid var(--cs-hairline);
@@ -292,7 +298,7 @@ onMounted(() => {
   border: 1px solid var(--cs-hairline);
   color: var(--cs-ink-muted);
   border-radius: 6px;
-  padding: 4px 14px;
+  padding: 8px 14px; /* 🟡-6：26px → ~38px */
   font-size: 12px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s; /* 🟢-7 */

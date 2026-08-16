@@ -63,6 +63,37 @@ a:hover {
   border-radius: 4px;
 }
 
+/* 🟡-5：触屏按压反馈（桌面 hover 在触屏不存在；配合 🟢-19 去掉 iOS 默认灰色闪烁） */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: none) {
+  button:active,
+  a:active,
+  [class*='row']:active,
+  [class*='item']:active,
+  [class*='card']:active {
+    opacity: 0.8;
+  }
+}
+
+/* 🔴-2：iOS Safari 对 <16px 输入框聚焦强制放大页面 → 窄屏统一 16px */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  .n-input__input-el,
+  .n-input textarea,
+  .n-base-selection-input {
+    font-size: 16px !important;
+  }
+  /* 🟡-6：naive tiny/small 按钮触控目标 ≥40px（22/28px 在触屏极易误触） */
+  .n-button--tiny,
+  .n-button--small {
+    min-height: 40px;
+  }
+}
+
 /* 🟡-1：窄屏基础兜底（组件级断点在各自 scoped 样式内） */
 @media (max-width: 640px) {
   body {

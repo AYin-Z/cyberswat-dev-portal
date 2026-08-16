@@ -112,13 +112,14 @@ const columns: DataTableColumns<InviteItem> = [
   {
     title: '操作',
     key: 'actions',
-    width: 80,
+    width: 100,
+    fixed: 'right', // 🔴-1：移动端操作列常驻可见
     render: (r) =>
       r.revoked
         ? h('span', { class: 'muted' }, '—')
         : h(
             NButton,
-            { size: 'tiny', type: 'error', quaternary: true, onClick: () => revoke(r.id) },
+            { size: 'small', type: 'error', quaternary: true, onClick: () => revoke(r.id) },
             { default: () => '撤销' },
           ),
   },
@@ -153,6 +154,7 @@ onMounted(load)
       :data="items"
       :bordered="false"
       size="small"
+      :scroll-x="660"
       class="table"
     />
     <empty-state v-if="!items.length && !loading" text="暂无邀请记录" />
@@ -195,7 +197,7 @@ onMounted(load)
   background: var(--cs-surface-1);
   border: 1px solid var(--cs-hairline);
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto; /* 🔴-1：允许横向滚动 */
 }
 .muted {
   color: var(--cs-ink-tertiary);

@@ -42,7 +42,7 @@ const emit = defineEmits<{ (e: 'action'): void }>()
   border: 1px solid var(--cs-hairline);
   color: var(--cs-ink-muted);
   border-radius: 8px;
-  padding: 6px 16px;
+  padding: 10px 16px; /* 🟢-14：热区 32px → ~40px */
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;

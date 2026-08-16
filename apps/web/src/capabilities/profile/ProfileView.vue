@@ -226,6 +226,19 @@ onMounted(load)
 .l-url {
   flex: 1;
 }
+/* 🟡-11：窄屏外链行两行堆叠（120px 固定 label 在 375px 下挤爆 URL 输入框） */
+@media (max-width: 640px) {
+  .link-row {
+    flex-wrap: wrap;
+  }
+  .l-label {
+    width: 100%;
+  }
+  .l-url {
+    width: 100%;
+    flex: none;
+  }
+}
 .save {
   width: 100%;
 }

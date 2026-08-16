@@ -108,4 +108,14 @@ onBeforeUnmount(() => {
 .n-content { color: var(--cs-ink-subtle); font-size: 12px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .n-meta { color: var(--cs-ink-subtle); font-size: 12px; margin-top: 4px; }
 .empty { padding: 20px; text-align: center; color: var(--cs-ink-subtle); font-size: 13px; }
+/* 🟡-6：触控目标放大（bell ~20px、clear ~18px → ≥40px） */
+@media (max-width: 768px) {
+  .bell {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .clear {
+    padding: 8px 10px;
+  }
+}
 </style>
