@@ -1,0 +1,9 @@
+node_modules/
+**/.pnpm/
+dist/
+deploy/
+docs/
+pnpm-lock.yaml
+*.tsbuildinfo
+*.log
+.DS_Store
