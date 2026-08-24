@@ -21,19 +21,20 @@ async function submit() {
   error.value = ''
   try {
     // 🟡-8：走 setTokens 持久化双 token（注册用户同样获得 14 天续期能力）
-    const data = await api<{ accessToken: string; refreshToken: string; user: { id: string; role: string; nickname: string } }>(
-      '/api/auth/register',
-      {
-        method: 'POST',
-        skipAuth: true,
-        body: JSON.stringify({
-          email: email.value,
-          password: password.value,
-          nickname: nickname.value,
-          inviteToken,
-        }),
-      },
-    )
+    const data = await api<{
+      accessToken: string
+      refreshToken: string
+      user: { id: string; role: string; nickname: string }
+    }>('/api/auth/register', {
+      method: 'POST',
+      skipAuth: true,
+      body: JSON.stringify({
+        email: email.value,
+        password: password.value,
+        nickname: nickname.value,
+        inviteToken,
+      }),
+    })
     auth.setTokens(data.accessToken, data.refreshToken)
     auth.user = data.user
     router.push('/')
@@ -60,17 +61,36 @@ async function submit() {
       <p v-if="error" class="error">{{ error }}</p>
 
       <form class="form" @submit.prevent="submit">
-        <input v-model="nickname" placeholder="昵称（对外展示）" aria-label="昵称" required :disabled="!inviteToken" />
-        <input v-model="email" type="email" placeholder="邮箱" aria-label="邮箱" required :disabled="!inviteToken" />
-        <input v-model="password" type="password" placeholder="密码（至少 8 位）" aria-label="密码" minlength="8" required :disabled="!inviteToken" />
+        <input
+          v-model="nickname"
+          placeholder="昵称（对外展示）"
+          aria-label="昵称"
+          required
+          :disabled="!inviteToken"
+        />
+        <input
+          v-model="email"
+          type="email"
+          placeholder="邮箱"
+          aria-label="邮箱"
+          required
+          :disabled="!inviteToken"
+        />
+        <input
+          v-model="password"
+          type="password"
+          placeholder="密码（至少 8 位）"
+          aria-label="密码"
+          minlength="8"
+          required
+          :disabled="!inviteToken"
+        />
         <button type="submit" class="btn primary" :disabled="!inviteToken || submitting">
           {{ submitting ? '注册中…' : '注册' }}
         </button>
       </form>
 
-      <p class="hint">
-        已有账号？<RouterLink to="/login">去登录</RouterLink>
-      </p>
+      <p class="hint">已有账号？<RouterLink to="/login">去登录</RouterLink></p>
     </div>
   </div>
 </template>
@@ -142,7 +162,9 @@ async function submit() {
   color: var(--cs-ink);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .form input:focus {
   border-color: var(--cs-accent);

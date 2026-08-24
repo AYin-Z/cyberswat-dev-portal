@@ -1,7 +1,22 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Component } from 'vue'
-import { NConfigProvider, NLayout, NLayoutSider, NLayoutHeader, NLayoutContent, NMenu, NAvatar, NButton, NDropdown, NMessageProvider, NDialogProvider, darkTheme, zhCN, dateZhCN } from 'naive-ui'
+import {
+  NConfigProvider,
+  NLayout,
+  NLayoutSider,
+  NLayoutHeader,
+  NLayoutContent,
+  NMenu,
+  NAvatar,
+  NButton,
+  NDropdown,
+  NMessageProvider,
+  NDialogProvider,
+  darkTheme,
+  zhCN,
+  dateZhCN,
+} from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useUiStore } from './stores/ui'
@@ -10,15 +25,33 @@ import NotificationBell from './components/NotificationBell.vue'
 import { themeOverrides } from './theme'
 // 🟡-8：菜单图标统一 @vicons/ionicons5 线性集（替代 ⌂/⬡ 文本字形）
 import {
-  HomeOutline, MegaphoneOutline, ServerOutline, PeopleOutline, PersonOutline,
-  CheckboxOutline, ChatbubblesOutline, BulbOutline, MailUnreadOutline,
-  ShieldCheckmarkOutline, FolderOpenOutline, CheckmarkDoneOutline,
+  HomeOutline,
+  MegaphoneOutline,
+  ServerOutline,
+  PeopleOutline,
+  PersonOutline,
+  CheckboxOutline,
+  ChatbubblesOutline,
+  BulbOutline,
+  MailUnreadOutline,
+  ShieldCheckmarkOutline,
+  FolderOpenOutline,
+  CheckmarkDoneOutline,
 } from '@vicons/ionicons5'
 
 const iconMap: Record<string, Component> = {
-  HomeOutline, MegaphoneOutline, ServerOutline, PeopleOutline, PersonOutline,
-  CheckboxOutline, ChatbubblesOutline, BulbOutline, MailUnreadOutline,
-  ShieldCheckmarkOutline, FolderOpenOutline, CheckmarkDoneOutline,
+  HomeOutline,
+  MegaphoneOutline,
+  ServerOutline,
+  PeopleOutline,
+  PersonOutline,
+  CheckboxOutline,
+  ChatbubblesOutline,
+  BulbOutline,
+  MailUnreadOutline,
+  ShieldCheckmarkOutline,
+  FolderOpenOutline,
+  CheckmarkDoneOutline,
 }
 
 const ui = useUiStore()
@@ -94,64 +127,79 @@ function onUserSelect(key: string) {
 </script>
 
 <template>
-  <n-config-provider :theme="darkTheme" :theme-overrides="themeOverrides" :locale="zhCN" :date-locale="dateZhCN">
-    <n-message-provider><n-dialog-provider>
-    <n-layout has-sider class="shell" :class="{ bare: isAuthPage }">
-      <!-- 🟡-7：认证页（登录/注册）不渲染侧栏与顶栏，全屏干净画布 -->
-      <!-- 🟡-4：移动端抽屉——折叠态 56px 常驻（sticky 导航锚点），展开态 absolute 浮层 + 遮罩 -->
-      <n-layout-sider
-        v-if="!isAuthPage"
-        bordered
-        collapse-mode="width"
-        :collapsed-width="56"
-        :width="220"
-        :collapsed="collapsed"
-        :position="isNarrow && !collapsed ? 'absolute' : 'static'"
-        show-trigger="bar"
-        class="app-sider"
-        @collapse="collapsed = true"
-        @expand="collapsed = false"
-      >
-        <div class="brand" :class="{ mini: collapsed }">
-          <span class="logo">⬡</span>
-          <span v-if="!collapsed" class="name">CYBERSWAT<span class="dev">·DEV</span></span>
-        </div>
-        <n-menu :options="menuOptions" :value="activeKey" :collapsed="collapsed" :collapsed-width="56" />
-        <div v-if="!collapsed" class="sider-foot">
-          <!-- 🟢-9：侧栏身份信息收敛为版本号（顶栏已有身份+下拉） -->
-          <span class="ver mono">dev · v1.2</span>
-        </div>
-      </n-layout-sider>
-      <!-- 🟡-4：抽屉遮罩（点击收起） -->
-      <div v-if="isNarrow && !collapsed" class="sider-mask" @click="collapsed = true" />
+  <n-config-provider
+    :theme="darkTheme"
+    :theme-overrides="themeOverrides"
+    :locale="zhCN"
+    :date-locale="dateZhCN"
+  >
+    <n-message-provider
+      ><n-dialog-provider>
+        <n-layout has-sider class="shell" :class="{ bare: isAuthPage }">
+          <!-- 🟡-7：认证页（登录/注册）不渲染侧栏与顶栏，全屏干净画布 -->
+          <!-- 🟡-4：移动端抽屉——折叠态 56px 常驻（sticky 导航锚点），展开态 absolute 浮层 + 遮罩 -->
+          <n-layout-sider
+            v-if="!isAuthPage"
+            bordered
+            collapse-mode="width"
+            :collapsed-width="56"
+            :width="220"
+            :collapsed="collapsed"
+            :position="isNarrow && !collapsed ? 'absolute' : 'static'"
+            show-trigger="bar"
+            class="app-sider"
+            @collapse="collapsed = true"
+            @expand="collapsed = false"
+          >
+            <div class="brand" :class="{ mini: collapsed }">
+              <span class="logo">⬡</span>
+              <span v-if="!collapsed" class="name">CYBERSWAT<span class="dev">·DEV</span></span>
+            </div>
+            <n-menu
+              :options="menuOptions"
+              :value="activeKey"
+              :collapsed="collapsed"
+              :collapsed-width="56"
+            />
+            <div v-if="!collapsed" class="sider-foot">
+              <!-- 🟢-9：侧栏身份信息收敛为版本号（顶栏已有身份+下拉） -->
+              <span class="ver mono">dev · v1.2</span>
+            </div>
+          </n-layout-sider>
+          <!-- 🟡-4：抽屉遮罩（点击收起） -->
+          <div v-if="isNarrow && !collapsed" class="sider-mask" @click="collapsed = true" />
 
-      <n-layout>
-        <!-- 顶栏 -->
-        <n-layout-header v-if="!isAuthPage" bordered class="topbar">
-          <span class="crumb">{{ route.meta.title ?? '' }}</span>
-          <div class="top-right">
-            <notification-bell v-if="auth.isLoggedIn" />
-            <n-dropdown v-if="auth.isLoggedIn" :options="userOptions" @select="onUserSelect">
-              <n-button quaternary size="small" class="user-btn">
-                <n-avatar round size="small" class="avatar">{{ (auth.user?.nickname ?? '?').slice(0, 1).toUpperCase() }}</n-avatar>
-                <span class="nick">{{ auth.user?.nickname }}</span>
-              </n-button>
-            </n-dropdown>
-            <n-button v-else quaternary size="small" @click="router.push('/login')">登录</n-button>
-          </div>
-        </n-layout-header>
+          <n-layout>
+            <!-- 顶栏 -->
+            <n-layout-header v-if="!isAuthPage" bordered class="topbar">
+              <span class="crumb">{{ route.meta.title ?? '' }}</span>
+              <div class="top-right">
+                <notification-bell v-if="auth.isLoggedIn" />
+                <n-dropdown v-if="auth.isLoggedIn" :options="userOptions" @select="onUserSelect">
+                  <n-button quaternary size="small" class="user-btn">
+                    <n-avatar round size="small" class="avatar">{{
+                      (auth.user?.nickname ?? '?').slice(0, 1).toUpperCase()
+                    }}</n-avatar>
+                    <span class="nick">{{ auth.user?.nickname }}</span>
+                  </n-button>
+                </n-dropdown>
+                <n-button v-else quaternary size="small" @click="router.push('/login')"
+                  >登录</n-button
+                >
+              </div>
+            </n-layout-header>
 
-        <!-- 内容区（🟢：1200px 居中；🟢：路由切换 150ms fade 过渡） -->
-        <n-layout-content class="content" :class="{ bare: isAuthPage }">
-          <RouterView v-slot="{ Component }">
-            <transition name="page" mode="out-in">
-              <component :is="Component" />
-            </transition>
-          </RouterView>
-        </n-layout-content>
-      </n-layout>
-    </n-layout>
-    </n-dialog-provider></n-message-provider>
+            <!-- 内容区（🟢：1200px 居中；🟢：路由切换 150ms fade 过渡） -->
+            <n-layout-content class="content" :class="{ bare: isAuthPage }">
+              <RouterView v-slot="{ Component }">
+                <transition name="page" mode="out-in">
+                  <component :is="Component" />
+                </transition>
+              </RouterView>
+            </n-layout-content>
+          </n-layout>
+        </n-layout> </n-dialog-provider
+    ></n-message-provider>
   </n-config-provider>
 </template>
 

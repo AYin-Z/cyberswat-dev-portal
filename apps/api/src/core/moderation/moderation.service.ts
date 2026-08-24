@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { PrismaService } from '../../core/db/prisma.service'
 import { NotificationService } from '../../core/notifications/notification.service'
 
@@ -19,7 +25,12 @@ export class ModerationService {
   ) {}
 
   /** 提交举报 */
-  async report(targetType: TargetType, targetId: string, reason: string, reporterId: string): Promise<void> {
+  async report(
+    targetType: TargetType,
+    targetId: string,
+    reason: string,
+    reporterId: string,
+  ): Promise<void> {
     await this.prisma.coreReport.create({
       data: { targetType, targetId, reason: reason.slice(0, 200), reporterId },
     })
@@ -37,11 +48,18 @@ export class ModerationService {
         link: '/moderation',
       })
     }
-    this.logger.log(`[mod] 举报 ${targetType}#${targetId.slice(0, 8)} by ${reporterId}: ${reason.slice(0, 40)}`)
+    this.logger.log(
+      `[mod] 举报 ${targetType}#${targetId.slice(0, 8)} by ${reporterId}: ${reason.slice(0, 40)}`,
+    )
   }
 
   /** 软删除（作者本人或部长）；marker = 删除标记文本 */
-  async remove(targetType: TargetType, targetId: string, actorId: string, actorRole: string): Promise<void> {
+  async remove(
+    targetType: TargetType,
+    targetId: string,
+    actorId: string,
+    actorRole: string,
+  ): Promise<void> {
     const canManage = actorRole === 'admin' || actorRole === 'dept-leader'
     const MARKER = '[已删除]'
     const MARKER_CONTENT = '(内容已被删除)'
@@ -49,13 +67,25 @@ export class ModerationService {
     const resolveTarget = async () => {
       switch (targetType) {
         case 'post':
-          return this.prisma.post.findUnique({ where: { id: targetId }, select: { authorId: true } })
+          return this.prisma.post.findUnique({
+            where: { id: targetId },
+            select: { authorId: true },
+          })
         case 'comment':
-          return this.prisma.postComment.findUnique({ where: { id: targetId }, select: { authorId: true } })
+          return this.prisma.postComment.findUnique({
+            where: { id: targetId },
+            select: { authorId: true },
+          })
         case 'idea':
-          return this.prisma.idea.findUnique({ where: { id: targetId }, select: { authorId: true } })
+          return this.prisma.idea.findUnique({
+            where: { id: targetId },
+            select: { authorId: true },
+          })
         case 'announcement':
-          return this.prisma.announcement.findUnique({ where: { id: targetId }, select: { authorId: true } })
+          return this.prisma.announcement.findUnique({
+            where: { id: targetId },
+            select: { authorId: true },
+          })
       }
     }
 
@@ -70,13 +100,22 @@ export class ModerationService {
         await this.prisma.post.update({ where: { id: targetId }, data: { deletedAt: new Date() } })
         break
       case 'comment':
-        await this.prisma.postComment.update({ where: { id: targetId }, data: { deletedAt: new Date() } })
+        await this.prisma.postComment.update({
+          where: { id: targetId },
+          data: { deletedAt: new Date() },
+        })
         break
       case 'idea':
-        await this.prisma.idea.update({ where: { id: targetId }, data: { title: MARKER, description: MARKER_CONTENT } })
+        await this.prisma.idea.update({
+          where: { id: targetId },
+          data: { title: MARKER, description: MARKER_CONTENT },
+        })
         break
       case 'announcement':
-        await this.prisma.announcement.update({ where: { id: targetId }, data: { title: MARKER, content: MARKER_CONTENT } })
+        await this.prisma.announcement.update({
+          where: { id: targetId },
+          data: { title: MARKER, content: MARKER_CONTENT },
+        })
         break
     }
     // 关联举报自动结案
@@ -100,7 +139,12 @@ export class ModerationService {
   }
 
   /** 处置举报：RESOLVED（转删除）/ DISMISSED（忽略） */
-  async resolveReport(reportId: string, action: 'RESOLVED' | 'DISMISSED', actorId: string, actorRole: string) {
+  async resolveReport(
+    reportId: string,
+    action: 'RESOLVED' | 'DISMISSED',
+    actorId: string,
+    actorRole: string,
+  ) {
     if (actorRole !== 'admin' && actorRole !== 'dept-leader') {
       throw new ForbiddenException('仅部长可处置举报')
     }

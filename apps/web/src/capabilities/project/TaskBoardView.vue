@@ -3,7 +3,17 @@ import { computed, onMounted, ref } from 'vue'
 import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
-import { NInput, NSelect, NButton, NDatePicker, NModal, NForm, NFormItem, NDropdown, useMessage } from 'naive-ui'
+import {
+  NInput,
+  NSelect,
+  NButton,
+  NDatePicker,
+  NModal,
+  NForm,
+  NFormItem,
+  NDropdown,
+  useMessage,
+} from 'naive-ui'
 import type { DropdownOption } from 'naive-ui'
 import { VueDraggableNext as draggable } from 'vue-draggable-next'
 
@@ -70,7 +80,11 @@ const colTasksMap = computed(() => {
 const colTasks = (key: string) => colTasksMap.value[key] ?? []
 
 // 🟡-6：看板键盘/无拖拽替代——卡片「下一步」操作菜单（复用 move 状态机）
-const FLOW_LABEL: Record<string, string> = { TODO: '认领', IN_PROGRESS: '提交验收', REVIEW: '通过验收' }
+const FLOW_LABEL: Record<string, string> = {
+  TODO: '认领',
+  IN_PROGRESS: '提交验收',
+  REVIEW: '通过验收',
+}
 function cardActions(task: TaskItem): DropdownOption[] {
   const next = FLOW_LABEL[task.status]
   if (!next) return []
@@ -78,7 +92,15 @@ function cardActions(task: TaskItem): DropdownOption[] {
     {
       label: next,
       key: 'next',
-      onClick: () => move(task, task.status === 'TODO' ? 'IN_PROGRESS' : task.status === 'IN_PROGRESS' ? 'REVIEW' : 'DONE'),
+      onClick: () =>
+        move(
+          task,
+          task.status === 'TODO'
+            ? 'IN_PROGRESS'
+            : task.status === 'IN_PROGRESS'
+              ? 'REVIEW'
+              : 'DONE',
+        ),
     },
   ]
 }
@@ -104,12 +126,19 @@ async function load() {
 async function move(task: TaskItem, toStatus: string) {
   if (task.status === toStatus) return
   // 🔴-3：按状态机映射动作（拖拽跳列时顺延流转）
-  const flow: Record<string, string> = { TODO: 'IN_PROGRESS', IN_PROGRESS: 'REVIEW', REVIEW: 'DONE' }
-  const action = flow[task.status] === toStatus
-    ? task.status === 'TODO' ? 'claim'
-      : task.status === 'IN_PROGRESS' ? 'submit'
-      : 'review'
-    : null
+  const flow: Record<string, string> = {
+    TODO: 'IN_PROGRESS',
+    IN_PROGRESS: 'REVIEW',
+    REVIEW: 'DONE',
+  }
+  const action =
+    flow[task.status] === toStatus
+      ? task.status === 'TODO'
+        ? 'claim'
+        : task.status === 'IN_PROGRESS'
+          ? 'submit'
+          : 'review'
+      : null
   if (!action) {
     message.warning('该状态跳转需走对应操作（认领/提交/验收）')
     return
@@ -217,15 +246,17 @@ onMounted(load)
           :delay="150"
           :touch-start-threshold="5"
           :data-col="col.key"
-          @end="(e: any) => {
-            // 🔴-3：end 事件只派发到源列——用 e.from/e.to 的 data-col 判定真实目标列
-            const fromCol = e.from?.dataset?.col
-            const toCol = e.to?.dataset?.col
-            const target = toCol || fromCol
-            const id = e.item?.dataset?.id
-            const t = tasks.find((x) => x.id === id)
-            if (t && target && t.status !== target) move(t, target)
-          }"
+          @end="
+            (e: any) => {
+              // 🔴-3：end 事件只派发到源列——用 e.from/e.to 的 data-col 判定真实目标列
+              const fromCol = e.from?.dataset?.col
+              const toCol = e.to?.dataset?.col
+              const target = toCol || fromCol
+              const id = e.item?.dataset?.id
+              const t = tasks.find((x) => x.id === id)
+              if (t && target && t.status !== target) move(t, target)
+            }
+          "
         >
           <template #default>
             <div
@@ -238,7 +269,11 @@ onMounted(load)
               <div class="card-top">
                 <status-badge :status="el.priority" type="priority" />
                 <span v-if="el.projectName" class="proj">{{ el.projectName }}</span>
-                <n-dropdown v-if="cardActions(el).length" :options="cardActions(el)" trigger="click">
+                <n-dropdown
+                  v-if="cardActions(el).length"
+                  :options="cardActions(el)"
+                  trigger="click"
+                >
                   <button class="card-more" aria-label="任务操作" title="操作">⋯</button>
                 </n-dropdown>
               </div>
@@ -255,7 +290,12 @@ onMounted(load)
     </div>
 
     <!-- 新任务弹窗 -->
-    <n-modal v-model:show="showNew" preset="card" title="创建任务" style="width: 480px; max-width: calc(100vw - 32px)">
+    <n-modal
+      v-model:show="showNew"
+      preset="card"
+      title="创建任务"
+      style="width: 480px; max-width: calc(100vw - 32px)"
+    >
       <n-form label-placement="top">
         <n-form-item label="标题">
           <n-input v-model:value="newTitle" placeholder="任务标题" />
@@ -264,10 +304,20 @@ onMounted(load)
           <n-input v-model:value="newDesc" type="textarea" :rows="2" placeholder="可选" />
         </n-form-item>
         <n-form-item label="指派给">
-          <n-select v-model:value="newAssignee" :options="members.map((m) => ({ label: m.nickname, value: m.id }))" placeholder="选择成员" clearable />
+          <n-select
+            v-model:value="newAssignee"
+            :options="members.map((m) => ({ label: m.nickname, value: m.id }))"
+            placeholder="选择成员"
+            clearable
+          />
         </n-form-item>
         <n-form-item label="所属项目">
-          <n-select v-model:value="newProject" :options="projects.map((p) => ({ label: p.name, value: p.id }))" placeholder="选择项目" clearable />
+          <n-select
+            v-model:value="newProject"
+            :options="projects.map((p) => ({ label: p.name, value: p.id }))"
+            placeholder="选择项目"
+            clearable
+          />
         </n-form-item>
         <n-form-item label="优先级">
           <n-select v-model:value="newPriority" :options="priorityOptions" />
@@ -280,7 +330,12 @@ onMounted(load)
     </n-modal>
 
     <!-- 🟡-4：提交说明弹窗（替代原生 window.prompt） -->
-    <n-modal v-model:show="showSubmitNote" preset="card" title="提交验收" style="width: 480px; max-width: calc(100vw - 32px)">
+    <n-modal
+      v-model:show="showSubmitNote"
+      preset="card"
+      title="提交验收"
+      style="width: 480px; max-width: calc(100vw - 32px)"
+    >
       <n-form label-placement="top">
         <n-form-item label="提交说明">
           <n-input
@@ -292,7 +347,9 @@ onMounted(load)
             show-count
           />
         </n-form-item>
-        <n-button type="primary" block :loading="submittingNote" @click="confirmSubmitNote">提交</n-button>
+        <n-button type="primary" block :loading="submittingNote" @click="confirmSubmitNote"
+          >提交</n-button
+        >
       </n-form>
     </n-modal>
   </section>

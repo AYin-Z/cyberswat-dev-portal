@@ -26,7 +26,10 @@ export interface ToolCallContext {
 export class ToolRegistry {
   private readonly logger = new Logger(ToolRegistry.name)
   private readonly tools = new Map<string, ToolDefinition>()
-  private readonly handlers = new Map<string, (params: unknown, ctx: ToolCallContext) => Promise<unknown>>()
+  private readonly handlers = new Map<
+    string,
+    (params: unknown, ctx: ToolCallContext) => Promise<unknown>
+  >()
   private readonly records: ToolCallRecord[] = []
 
   constructor(
@@ -75,7 +78,11 @@ export class ToolRegistry {
     if (!def) throw new BadRequestException(`工具不存在: ${toolId}`)
 
     // scope 检查：角色可见性（MCP 调用时 scope 已由 token 校验，跳过）
-    if (!opts?.skipRoleCheck && def.requiredPermission && !this.permissions.has(ctx.role, def.requiredPermission)) {
+    if (
+      !opts?.skipRoleCheck &&
+      def.requiredPermission &&
+      !this.permissions.has(ctx.role, def.requiredPermission)
+    ) {
       throw new ForbiddenException(`无权调用工具: ${toolId}`)
     }
     // agent 调用限制
@@ -100,7 +107,10 @@ export class ToolRegistry {
       this.records.push(record)
       this.events.emit('tool.approval.requested', { record })
       // 🟡-4：通知部长（审批工作台入口）
-      this.notifyLeaders(`待审批：${toolId}`, `agent ${ctx.agentId?.slice(0, 12)} 请求执行 ${toolId}`)
+      this.notifyLeaders(
+        `待审批：${toolId}`,
+        `agent ${ctx.agentId?.slice(0, 12)} 请求执行 ${toolId}`,
+      )
       this.logger.warn(`[tool] ${toolId} 等待审批 (caller=${ctx.caller})`)
       return { status: 'pending', recordId: record.id, message: '工具调用等待人工审批' }
     }
@@ -138,10 +148,11 @@ export class ToolRegistry {
     }
     // 通过：执行原调用（caller 为原请求者；角色检查跳过——scope 已授权）
     try {
-      const result = await this.handlers.get(record.toolId)!(
-        record.params,
-        { caller: record.caller, role: (record as ToolCallRecord & { role?: Role }).role ?? 'member', agentId: record.agentId },
-      )
+      const result = await this.handlers.get(record.toolId)!(record.params, {
+        caller: record.caller,
+        role: (record as ToolCallRecord & { role?: Role }).role ?? 'member',
+        agentId: record.agentId,
+      })
       record.result = result
       record.status = 'ok'
       record.approvedBy = approver
@@ -153,7 +164,9 @@ export class ToolRegistry {
       record.result = err instanceof Error ? err.message : String(err)
       record.approvedBy = approver
       await this.persist(record)
-      this.logger.error(`[tool] ${record.toolId} 审批后执行失败: ${err instanceof Error ? err.message : err}`)
+      this.logger.error(
+        `[tool] ${record.toolId} 审批后执行失败: ${err instanceof Error ? err.message : err}`,
+      )
     }
   }
 

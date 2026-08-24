@@ -17,8 +17,14 @@ export class SkillsService implements OnModuleInit {
     const count = await this.prisma.coreSkill.count()
     if (count > 0) return
     const categories: [string, string[]][] = [
-      ['Web前端', ['Vue', 'React', 'TypeScript', 'JavaScript', 'HTML/CSS', 'Tailwind', 'Vite', 'Nuxt']],
-      ['后端', ['Node.js', 'NestJS', 'Express', 'Go', 'Python', 'Java', 'Spring', 'FastAPI', 'GraphQL']],
+      [
+        'Web前端',
+        ['Vue', 'React', 'TypeScript', 'JavaScript', 'HTML/CSS', 'Tailwind', 'Vite', 'Nuxt'],
+      ],
+      [
+        '后端',
+        ['Node.js', 'NestJS', 'Express', 'Go', 'Python', 'Java', 'Spring', 'FastAPI', 'GraphQL'],
+      ],
       ['数据库', ['PostgreSQL', 'MySQL', 'Redis', 'MongoDB', 'SQLite', 'Prisma', 'TypeORM']],
       ['安全', ['Web安全', '二进制安全', '逆向工程', '密码学', '渗透测试', 'CTF']],
       ['算法', ['数据结构', '竞赛算法', '机器学习', '深度学习', '数学建模']],
@@ -35,7 +41,9 @@ export class SkillsService implements OnModuleInit {
         data: skills.map((name) => ({ name, categoryId: cat.id })),
       })
     }
-    this.logger.log(`[skills] 词表播种完成: ${categories.length} 分类, ${categories.reduce((a, c) => a + c[1].length, 0)} 技能`)
+    this.logger.log(
+      `[skills] 词表播种完成: ${categories.length} 分类, ${categories.reduce((a, c) => a + c[1].length, 0)} 技能`,
+    )
   }
 
   /** 词表（分类→技能） */

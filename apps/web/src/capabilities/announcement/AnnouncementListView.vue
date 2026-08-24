@@ -66,16 +66,20 @@ onMounted(load)
     <n-spin v-if="loading" class="spin" />
 
     <div v-else-if="items.length" class="list">
-      <div v-for="a in items" :key="a.id" class="item" :class="{ unread: !a.read }" @click="open(a)">
+      <div
+        v-for="a in items"
+        :key="a.id"
+        class="item"
+        :class="{ unread: !a.read }"
+        @click="open(a)"
+      >
         <div class="item-top">
           <n-tag v-if="a.important" size="small" type="warning" :bordered="false">重要</n-tag>
           <span v-if="!a.read" class="dot" title="未读" />
           <span class="title">{{ a.title }}</span>
-          <button
-            v-if="a.important && !a.confirmed"
-            class="confirm-btn"
-            @click.stop="confirm(a)"
-          >确认收到</button>
+          <button v-if="a.important && !a.confirmed" class="confirm-btn" @click.stop="confirm(a)">
+            确认收到
+          </button>
           <span v-else-if="a.important && a.confirmed" class="confirmed">✓ 已确认</span>
         </div>
         <p class="meta">
@@ -86,7 +90,12 @@ onMounted(load)
       </div>
     </div>
 
-    <empty-state v-else text="暂无公告" cta="发布第一条公告" @action="$router.push('/announcements/new')" />
+    <empty-state
+      v-else
+      text="暂无公告"
+      cta="发布第一条公告"
+      @action="$router.push('/announcements/new')"
+    />
   </section>
 </template>
 
@@ -134,7 +143,9 @@ onMounted(load)
   border-radius: 8px;
   padding: 14px 16px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .item:hover {
   background: var(--cs-surface-2);

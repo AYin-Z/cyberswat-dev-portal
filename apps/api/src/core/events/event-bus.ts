@@ -19,10 +19,7 @@ export class EventBus {
   }
 
   /** 订阅事件（能力包/agent 使用） */
-  on<K extends keyof CoreEventMap>(
-    event: K,
-    handler: (payload: CoreEventMap[K]) => void,
-  ): void {
+  on<K extends keyof CoreEventMap>(event: K, handler: (payload: CoreEventMap[K]) => void): void {
     this.emitter.on(event, handler)
   }
 

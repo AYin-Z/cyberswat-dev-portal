@@ -9,8 +9,16 @@ export const manifest: PluginManifest = {
   version: '0.1.0',
   deps: ['core.notification'],
   permissions: [
-    { id: 'example.view', description: '查看示例内容', defaultRoles: ['member', 'dept-leader', 'admin'] },
-    { id: 'example.danger', description: '执行示例危险操作', defaultRoles: ['dept-leader', 'admin'] },
+    {
+      id: 'example.view',
+      description: '查看示例内容',
+      defaultRoles: ['member', 'dept-leader', 'admin'],
+    },
+    {
+      id: 'example.danger',
+      description: '执行示例危险操作',
+      defaultRoles: ['dept-leader', 'admin'],
+    },
   ],
   tools: ['example.ping', 'example.dangerous'],
   events: ['user.created'],

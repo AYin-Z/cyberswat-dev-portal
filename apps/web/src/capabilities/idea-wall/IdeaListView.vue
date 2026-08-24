@@ -76,7 +76,9 @@ onMounted(load)
         <h3 class="c-title">{{ i.title }}</h3>
         <p class="need">🔧 {{ i.need }}</p>
         <div class="tags">
-          <n-tag v-for="t in i.techStack" :key="t" size="tiny" :bordered="false" class="tag">{{ t }}</n-tag>
+          <n-tag v-for="t in i.techStack" :key="t" size="tiny" :bordered="false" class="tag">{{
+            t
+          }}</n-tag>
         </div>
         <p class="meta">{{ i.author.nickname }} · {{ i.createdAt.slice(0, 10) }}</p>
       </RouterLink>
@@ -119,7 +121,9 @@ onMounted(load)
   padding: 16px;
   text-decoration: none;
   color: var(--cs-ink);
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .card:hover {
   background: var(--cs-surface-2);

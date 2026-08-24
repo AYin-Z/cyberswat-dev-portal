@@ -56,7 +56,12 @@ const columns: DataTableColumns<ReportItem> = [
     title: '类型',
     key: 'targetType',
     width: 70,
-    render: (r) => h(NTag, { size: 'small', bordered: false }, { default: () => typeLabel[r.targetType] ?? r.targetType }),
+    render: (r) =>
+      h(
+        NTag,
+        { size: 'small', bordered: false },
+        { default: () => typeLabel[r.targetType] ?? r.targetType },
+      ),
   },
   {
     title: '目标',
@@ -78,8 +83,16 @@ const columns: DataTableColumns<ReportItem> = [
     fixed: 'right', // 🔴-1：移动端操作列常驻可见
     render: (r) =>
       h('div', { class: 'acts' }, [
-        h(NButton, { size: 'small', type: 'error', onClick: () => resolve(r.id, 'RESOLVED') }, { default: () => '删除内容' }),
-        h(NButton, { size: 'small', quaternary: true, onClick: () => resolve(r.id, 'DISMISSED') }, { default: () => '忽略' }),
+        h(
+          NButton,
+          { size: 'small', type: 'error', onClick: () => resolve(r.id, 'RESOLVED') },
+          { default: () => '删除内容' },
+        ),
+        h(
+          NButton,
+          { size: 'small', quaternary: true, onClick: () => resolve(r.id, 'DISMISSED') },
+          { default: () => '忽略' },
+        ),
       ]),
   },
 ]

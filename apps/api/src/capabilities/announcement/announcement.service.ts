@@ -49,7 +49,8 @@ export class AnnouncementService {
         },
         requiredPermission: 'announcement.view',
       },
-      async (params, ctx) => this.listForTool(params as { importantOnly?: boolean; limit?: number }, ctx),
+      async (params, ctx) =>
+        this.listForTool(params as { importantOnly?: boolean; limit?: number }, ctx),
     )
     this.tools.register(
       {
@@ -63,7 +64,8 @@ export class AnnouncementService {
         requiredPermission: 'announcement.publish',
         requiresApproval: true,
       },
-      async (params, ctx) => this.publishForTool(params as { title: string; content: string; important?: boolean }, ctx),
+      async (params, ctx) =>
+        this.publishForTool(params as { title: string; content: string; important?: boolean }, ctx),
     )
     this.logger.log('[announcement] 工具注册完成')
   }
@@ -92,7 +94,10 @@ export class AnnouncementService {
   }
 
   /** 发布（人工） */
-  async publish(authorId: string, data: { title: string; content: string; important?: boolean }): Promise<AnnouncementView> {
+  async publish(
+    authorId: string,
+    data: { title: string; content: string; important?: boolean },
+  ): Promise<AnnouncementView> {
     const row = await this.prisma.announcement.create({
       data: {
         title: data.title,
@@ -129,7 +134,11 @@ export class AnnouncementService {
   }
 
   /** 阅读：标记已读 + 重要公告确认（幂等） */
-  async markRead(announcementId: string, userId: string, confirm = false): Promise<AnnouncementView> {
+  async markRead(
+    announcementId: string,
+    userId: string,
+    confirm = false,
+  ): Promise<AnnouncementView> {
     const ann = await this.prisma.announcement.findUnique({
       where: { id: announcementId },
       include: {
@@ -156,14 +165,27 @@ export class AnnouncementService {
   }
 
   /** 部长视角：已读/未读统计 + 名单 */
-  async stats(announcementId: string): Promise<AnnouncementStats & { readers: { userId: string; nickname: string; readAt: string; confirmed: boolean }[]; unreadUsers: { id: string; nickname: string }[] }> {
+  async stats(
+    announcementId: string,
+  ): Promise<
+    AnnouncementStats & {
+      readers: { userId: string; nickname: string; readAt: string; confirmed: boolean }[]
+      unreadUsers: { id: string; nickname: string }[]
+    }
+  > {
     const ann = await this.prisma.announcement.findUnique({
       where: { id: announcementId },
-      include: { reads: { include: { user: { select: { id: true, nickname: true } } } }, author: true },
+      include: {
+        reads: { include: { user: { select: { id: true, nickname: true } } } },
+        author: true,
+      },
     })
     if (!ann) throw new NotFoundException('公告不存在')
 
-    const allUsers = await this.prisma.coreUser.findMany({ where: { active: true }, select: { id: true, nickname: true } })
+    const allUsers = await this.prisma.coreUser.findMany({
+      where: { active: true },
+      select: { id: true, nickname: true },
+    })
     const readIds = new Set(ann.reads.map((r) => r.userId))
     return {
       total: allUsers.length,
@@ -181,7 +203,10 @@ export class AnnouncementService {
   }
 
   /** agent 工具：列表 */
-  private async listForTool(params: { importantOnly?: boolean; limit?: number }, _ctx: ToolCallContext) {
+  private async listForTool(
+    params: { importantOnly?: boolean; limit?: number },
+    _ctx: ToolCallContext,
+  ) {
     const rows = await this.prisma.announcement.findMany({
       where: params.importantOnly ? { important: true } : undefined,
       select: { id: true, title: true, important: true, publishedAt: true },
@@ -192,7 +217,10 @@ export class AnnouncementService {
   }
 
   /** agent 工具：发布（走审批） */
-  private async publishForTool(params: { title: string; content: string; important?: boolean }, ctx: ToolCallContext) {
+  private async publishForTool(
+    params: { title: string; content: string; important?: boolean },
+    ctx: ToolCallContext,
+  ) {
     return this.publish(ctx.caller, params)
   }
 

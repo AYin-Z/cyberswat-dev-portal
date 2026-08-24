@@ -42,7 +42,11 @@ export const useAuthStore = defineStore('auth', {
         body: JSON.stringify({ email, password }),
       })
       if (!res.ok) throw new Error('邮箱或密码错误')
-      const data = (await res.json()) as { accessToken: string; refreshToken: string; user: AuthUser }
+      const data = (await res.json()) as {
+        accessToken: string
+        refreshToken: string
+        user: AuthUser
+      }
       this.setTokens(data.accessToken, data.refreshToken)
       this.user = data.user
     },
@@ -54,7 +58,9 @@ export const useAuthStore = defineStore('auth', {
         return
       }
       try {
-        const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${this.token}` } })
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${this.token}` },
+        })
         if (res.ok) {
           this.user = (await res.json()) as AuthUser
         } else {

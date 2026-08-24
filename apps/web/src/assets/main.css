@@ -36,8 +36,8 @@ body {
   background: var(--cs-canvas);
   color: var(--cs-ink);
   font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'PingFang SC',
-    'Microsoft YaHei', sans-serif;
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;

@@ -81,8 +81,16 @@ const columns: DataTableColumns<PendingItem> = [
     fixed: 'right', // 🔴-1：移动端操作列常驻可见
     render: (r) =>
       h('div', { class: 'acts' }, [
-        h(NButton, { size: 'small', type: 'success', onClick: () => resolve(r.id, true) }, { default: () => '批准' }),
-        h(NButton, { size: 'small', type: 'error', quaternary: true, onClick: () => resolve(r.id, false) }, { default: () => '驳回' }),
+        h(
+          NButton,
+          { size: 'small', type: 'success', onClick: () => resolve(r.id, true) },
+          { default: () => '批准' },
+        ),
+        h(
+          NButton,
+          { size: 'small', type: 'error', quaternary: true, onClick: () => resolve(r.id, false) },
+          { default: () => '驳回' },
+        ),
       ]),
   },
 ]

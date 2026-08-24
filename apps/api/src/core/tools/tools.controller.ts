@@ -23,11 +23,7 @@ export class ToolsController {
 
   /** 调用工具（人工调用可跳过审批 — skipApproval） */
   @Post(':id/call')
-  call(
-    @Param('id') id: string,
-    @Body() body: { params: unknown },
-    @CurrentUser() user: AuthUser,
-  ) {
+  call(@Param('id') id: string, @Body() body: { params: unknown }, @CurrentUser() user: AuthUser) {
     const ctx: ToolCallContext = { caller: user.id, role: user.role }
     return this.registry.call(id, body.params, ctx, { skipApproval: true })
   }
@@ -48,7 +44,11 @@ export class ToolsController {
 
   /** 审批：批准/驳回 */
   @Post('pending/:recordId')
-  resolve(@Param('recordId') recordId: string, @Body('approve') approve: boolean, @CurrentUser() user: AuthUser) {
+  resolve(
+    @Param('recordId') recordId: string,
+    @Body('approve') approve: boolean,
+    @CurrentUser() user: AuthUser,
+  ) {
     if (user.role !== 'dept-leader' && user.role !== 'admin') {
       throw new ForbiddenException('仅部长可审批')
     }

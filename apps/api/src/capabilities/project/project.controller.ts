@@ -51,7 +51,11 @@ export class ProjectController {
 
   @Authorize()
   @Post('projects/:id/members')
-  async addMember(@Param('id') id: string, @Body('userId') userId: string, @CurrentUser() user: AuthUser) {
+  async addMember(
+    @Param('id') id: string,
+    @Body('userId') userId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
     await this.service.assertCanManageProject(user.id, user.role, id)
     return this.service.addMember(id, userId)
   }
@@ -93,7 +97,11 @@ export class ProjectController {
 
   @Authorize('task.work')
   @Post('tasks/:id/submit')
-  submit(@Param('id') id: string, @Body() dto: ReviewDto, @CurrentUser() user: AuthUser): Promise<TaskView> {
+  submit(
+    @Param('id') id: string,
+    @Body() dto: ReviewDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<TaskView> {
     return this.service.submit(id, user.id, dto.note)
   }
 

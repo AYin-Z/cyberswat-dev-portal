@@ -9,9 +9,21 @@ export const manifest: PluginManifest = {
   version: '0.1.0',
   deps: ['core.notification'],
   permissions: [
-    { id: 'announcement.view', description: '查看公告', defaultRoles: ['member', 'dept-leader', 'admin'] },
-    { id: 'announcement.publish', description: '发布/编辑/删除公告', defaultRoles: ['dept-leader', 'admin'] },
-    { id: 'announcement.readers', description: '查看已读/未读名单', defaultRoles: ['dept-leader', 'admin'] },
+    {
+      id: 'announcement.view',
+      description: '查看公告',
+      defaultRoles: ['member', 'dept-leader', 'admin'],
+    },
+    {
+      id: 'announcement.publish',
+      description: '发布/编辑/删除公告',
+      defaultRoles: ['dept-leader', 'admin'],
+    },
+    {
+      id: 'announcement.readers',
+      description: '查看已读/未读名单',
+      defaultRoles: ['dept-leader', 'admin'],
+    },
   ],
   tools: ['announcement.list', 'announcement.publish'],
   events: ['announcement.published'],

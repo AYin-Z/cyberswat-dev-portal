@@ -10,6 +10,11 @@ export const ideaUi: UiContribution = {
   routes: [
     { path: '/ideas', name: 'ideas', component: IdeaListView },
     { path: '/ideas/new', name: 'idea-new', component: IdeaNewView },
-    { path: '/ideas/:id', name: 'idea-detail', component: IdeaDetailView, meta: { title: '点子详情' } },
+    {
+      path: '/ideas/:id',
+      name: 'idea-detail',
+      component: IdeaDetailView,
+      meta: { title: '点子详情' },
+    },
   ],
 }

@@ -12,7 +12,12 @@ export const projectUi: UiContribution = {
   ],
   routes: [
     { path: '/projects', name: 'projects', component: ProjectListView },
-    { path: '/projects/:id', name: 'project-detail', component: ProjectDetailView, meta: { title: '项目详情' } },
+    {
+      path: '/projects/:id',
+      name: 'project-detail',
+      component: ProjectDetailView,
+      meta: { title: '项目详情' },
+    },
     { path: '/tasks', name: 'tasks', component: TaskBoardView },
   ],
 }

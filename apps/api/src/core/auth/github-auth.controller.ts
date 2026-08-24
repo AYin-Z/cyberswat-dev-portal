@@ -24,7 +24,12 @@ export class GithubAuthController {
     if (!clientId) throw new BadRequestException('GitHub OAuth 未配置（GITHUB_CLIENT_ID）')
     // 🔴-10 修复：state 防登录 CSRF（存 10 分钟签名 cookie，回调校验）
     const state = randomBytes(16).toString('hex')
-    res.cookie('gh_oauth_state', state, { httpOnly: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/' })
+    res.cookie('gh_oauth_state', state, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 10 * 60 * 1000,
+      path: '/',
+    })
     const redirectUri = `${this.baseUrl()}/api/auth/github/callback`
     const url = `${GITHUB_AUTH_URL}?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=read:user user:email`
     res.redirect(url)
@@ -32,7 +37,11 @@ export class GithubAuthController {
 
   @Public()
   @Get('callback')
-  async callback(@Query('code') code: string | undefined, @Query('state') state: string | undefined, @Res() res: Response) {
+  async callback(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Res() res: Response,
+  ) {
     if (!code) throw new BadRequestException('缺少授权码')
     // 🔴-10 修复：state 校验（防登录 CSRF）
     const expectedState = (res.req as { cookies?: Record<string, string> }).cookies?.gh_oauth_state
@@ -56,7 +65,8 @@ export class GithubAuthController {
       }),
     })
     const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string }
-    if (!tokenData.access_token) throw new BadRequestException(`GitHub 授权失败: ${tokenData.error ?? 'unknown'}`)
+    if (!tokenData.access_token)
+      throw new BadRequestException(`GitHub 授权失败: ${tokenData.error ?? 'unknown'}`)
 
     // 2. 获取用户信息
     const userRes = await fetch(GITHUB_API_USER, {

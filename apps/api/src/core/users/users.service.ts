@@ -57,7 +57,15 @@ export class UsersService {
 
   /** 对外脱敏视图 — 姓名/区队/邮箱/角色 永不外泄 */
   toPublic(user: InternalUserProfile): PublicUserProfile {
-    const { realName: _rn, teamInfo: _ti, email: _e, role: _r, active: _a, createdAt: _c, ...pub } = user
+    const {
+      realName: _rn,
+      teamInfo: _ti,
+      email: _e,
+      role: _r,
+      active: _a,
+      createdAt: _c,
+      ...pub
+    } = user
     return pub
   }
 
@@ -167,10 +175,14 @@ export class UsersService {
 
   private mapRole(role: CoreRole): Role {
     switch (role) {
-      case 'ADMIN': return 'admin'
-      case 'DEPT_LEADER': return 'dept-leader'
-      case 'GUEST': return 'guest'
-      default: return 'member'
+      case 'ADMIN':
+        return 'admin'
+      case 'DEPT_LEADER':
+        return 'dept-leader'
+      case 'GUEST':
+        return 'guest'
+      default:
+        return 'member'
     }
   }
 }

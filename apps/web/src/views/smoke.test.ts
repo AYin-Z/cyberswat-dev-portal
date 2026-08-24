@@ -28,7 +28,10 @@ function makeRouter(): Router {
 }
 
 function jsonOk(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 describe('视图冒烟（挂载不抛错）', () => {
@@ -37,17 +40,23 @@ describe('视图冒烟（挂载不抛错）', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     router = makeRouter()
-    vi.stubGlobal('fetch', vi.fn(async (_url: string, _init?: RequestInit) => jsonOk([])))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, _init?: RequestInit) => jsonOk([])),
+    )
     document.body.innerHTML = ''
   })
 
   it('AnnouncementNewView：NMessageProvider 包裹下挂载不抛错', async () => {
-    const w = mount({
-      components: { AnnouncementNewView, NMessageProvider },
-      template: '<n-message-provider><announcement-new-view /></n-message-provider>',
-    }, {
-      global: { plugins: [router] },
-    })
+    const w = mount(
+      {
+        components: { AnnouncementNewView, NMessageProvider },
+        template: '<n-message-provider><announcement-new-view /></n-message-provider>',
+      },
+      {
+        global: { plugins: [router] },
+      },
+    )
     await flushPromises()
     expect(w.exists()).toBe(true)
     expect(w.text()).toContain('发布公告')
@@ -61,10 +70,13 @@ describe('视图冒烟（挂载不抛错）', () => {
   })
 
   it('AnnouncementNewView：空表单提交 → message.warning 校验提示', async () => {
-    const w = mount({
-      components: { AnnouncementNewView, NMessageProvider },
-      template: '<n-message-provider><announcement-new-view /></n-message-provider>',
-    }, {})
+    const w = mount(
+      {
+        components: { AnnouncementNewView, NMessageProvider },
+        template: '<n-message-provider><announcement-new-view /></n-message-provider>',
+      },
+      {},
+    )
     await flushPromises()
     await w.find('form').trigger('submit')
     await flushPromises()
@@ -77,12 +89,15 @@ describe('视图冒烟（挂载不抛错）', () => {
   it('AnnouncementNewView：填写后提交 → POST /api/announcements 并跳转 /announcements', async () => {
     const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => jsonOk({ id: 'a1' }))
     vi.stubGlobal('fetch', fetchMock)
-    const w = mount({
-      components: { AnnouncementNewView, NMessageProvider },
-      template: '<n-message-provider><announcement-new-view /></n-message-provider>',
-    }, {
-      global: { plugins: [router] },
-    })
+    const w = mount(
+      {
+        components: { AnnouncementNewView, NMessageProvider },
+        template: '<n-message-provider><announcement-new-view /></n-message-provider>',
+      },
+      {
+        global: { plugins: [router] },
+      },
+    )
     await flushPromises()
     await w.find('form input').setValue('测试公告')
     await w.find('form textarea').setValue('公告正文内容')
@@ -105,15 +120,25 @@ describe('视图冒烟（挂载不抛错）', () => {
       'fetch',
       vi.fn(async (url: string) => {
         if (String(url).includes('/api/me')) {
-          return jsonOk({ nickname: 'Ayin', grade: '2024', bio: 'hi', skills: ['Vue'], allowMatch: true, links: [] })
+          return jsonOk({
+            nickname: 'Ayin',
+            grade: '2024',
+            bio: 'hi',
+            skills: ['Vue'],
+            allowMatch: true,
+            links: [],
+          })
         }
         return jsonOk([]) // /api/skills 无分类 → 无分组选项
       }),
     )
-    const w = mount({
-      components: { ProfileView, NMessageProvider },
-      template: '<n-message-provider><profile-view /></n-message-provider>',
-    }, {})
+    const w = mount(
+      {
+        components: { ProfileView, NMessageProvider },
+        template: '<n-message-provider><profile-view /></n-message-provider>',
+      },
+      {},
+    )
     await flushPromises()
     expect(w.exists()).toBe(true)
     expect(w.text()).toContain('个人资料')
@@ -134,20 +159,34 @@ describe('视图冒烟（挂载不抛错）', () => {
       'fetch',
       vi.fn(async (url: string) => {
         if (String(url).includes('/api/me')) {
-          return jsonOk({ nickname: 'Ayin', grade: '2024', bio: 'hi', skills: ['Vue'], allowMatch: true, links: [] })
+          return jsonOk({
+            nickname: 'Ayin',
+            grade: '2024',
+            bio: 'hi',
+            skills: ['Vue'],
+            allowMatch: true,
+            links: [],
+          })
         }
         return jsonOk([{ name: '前端', skills: ['Vue', 'React'] }]) // 有分类 → 分组选项
       }),
     )
     let handled = 0
-    const w = mount({
-      components: { ProfileView, NMessageProvider },
-      template: '<n-message-provider><profile-view /></n-message-provider>',
-    }, {
-      global: {
-        config: { errorHandler: () => { handled += 1 } },
+    const w = mount(
+      {
+        components: { ProfileView, NMessageProvider },
+        template: '<n-message-provider><profile-view /></n-message-provider>',
       },
-    })
+      {
+        global: {
+          config: {
+            errorHandler: () => {
+              handled += 1
+            },
+          },
+        },
+      },
+    )
     await flushPromises()
     expect(w.exists()).toBe(true)
     expect(handled).toBe(0) // ← 期望资料页零渲染错误；当前 NSelect 崩溃 1 次 → 本用例失败
@@ -166,7 +205,10 @@ describe('视图冒烟（挂载不抛错）', () => {
       joined: false,
       createdAt: '2026-08-15T10:00:00.000Z',
     }
-    vi.stubGlobal('fetch', vi.fn(async () => jsonOk([idea])))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonOk([idea])),
+    )
     const w = mount(IdeaListView, {
       global: {
         plugins: [router],

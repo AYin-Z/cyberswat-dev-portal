@@ -58,7 +58,9 @@ describe('stores/auth.ts', () => {
 
   it('restore：有 token 且 /me 成功 → 还原身份', async () => {
     localStorage.setItem(TOKEN_KEY, 'acc-1')
-    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => okJson({ id: 'u1', role: 'dept-leader', nickname: 'Leader' }))
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      okJson({ id: 'u1', role: 'dept-leader', nickname: 'Leader' }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const auth = useAuthStore()
@@ -73,7 +75,10 @@ describe('stores/auth.ts', () => {
 
   it('restore：/me 返回 401 → 清空 token', async () => {
     localStorage.setItem(TOKEN_KEY, 'expired-acc')
-    vi.stubGlobal('fetch', vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 401 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 401 })),
+    )
 
     const auth = useAuthStore()
     await auth.restore()
@@ -84,7 +89,9 @@ describe('stores/auth.ts', () => {
   })
 
   it('restore：无 token → 直接完成不请求 /me', async () => {
-    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 404 }))
+    const fetchMock = vi.fn(
+      async (_url: string, _init?: RequestInit) => new Response(null, { status: 404 }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const auth = useAuthStore()
@@ -96,7 +103,9 @@ describe('stores/auth.ts', () => {
 
   it('restore：已 bootstrap 过 → 幂等跳过', async () => {
     localStorage.setItem(TOKEN_KEY, 'acc-1')
-    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 404 }))
+    const fetchMock = vi.fn(
+      async (_url: string, _init?: RequestInit) => new Response(null, { status: 404 }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const auth = useAuthStore()

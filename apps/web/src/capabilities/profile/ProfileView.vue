@@ -3,7 +3,17 @@ import { onMounted, ref } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
-import { NInput, NButton, NForm, NFormItem, NSelect, NSwitch, NTag, NSpin, useMessage } from 'naive-ui'
+import {
+  NInput,
+  NButton,
+  NForm,
+  NFormItem,
+  NSelect,
+  NSwitch,
+  NTag,
+  NSpin,
+  useMessage,
+} from 'naive-ui'
 import type { SelectOption } from 'naive-ui'
 
 const auth = useAuthStore()
@@ -111,7 +121,13 @@ onMounted(load)
         <n-input v-model:value="grade" placeholder="如 2024" maxlength="10" class="short" />
       </n-form-item>
       <n-form-item label="一句话签名">
-        <n-input v-model:value="bio" type="textarea" :rows="2" placeholder="介绍你自己" maxlength="200" />
+        <n-input
+          v-model:value="bio"
+          type="textarea"
+          :rows="2"
+          placeholder="介绍你自己"
+          maxlength="200"
+        />
       </n-form-item>
 
       <n-form-item label="技能（词表选择 + 自定义）">
@@ -126,11 +142,25 @@ onMounted(load)
           class="full"
         />
         <div class="custom-row">
-          <n-input v-model:value="customSkill" placeholder="自定义技能" size="small" class="custom-input" @keyup.enter="addCustomSkill" />
+          <n-input
+            v-model:value="customSkill"
+            placeholder="自定义技能"
+            size="small"
+            class="custom-input"
+            @keyup.enter="addCustomSkill"
+          />
           <n-button size="small" @click="addCustomSkill">添加</n-button>
         </div>
         <div v-if="skills.length" class="skill-tags">
-          <n-tag v-for="s in skills" :key="s" size="small" closable :bordered="false" class="stag" @close="removeSkill(s)">
+          <n-tag
+            v-for="s in skills"
+            :key="s"
+            size="small"
+            closable
+            :bordered="false"
+            class="stag"
+            @close="removeSkill(s)"
+          >
             {{ s }}
           </n-tag>
         </div>
@@ -148,7 +178,12 @@ onMounted(load)
       <n-form-item label="外链">
         <div class="links">
           <div v-for="(l, i) in links" :key="i" class="link-row">
-            <n-input v-model:value="l.label" placeholder="名称（GitHub/Blog/掘金…）" size="small" class="l-label" />
+            <n-input
+              v-model:value="l.label"
+              placeholder="名称（GitHub/Blog/掘金…）"
+              size="small"
+              class="l-label"
+            />
             <n-input v-model:value="l.url" placeholder="https://…" size="small" class="l-url" />
             <n-button size="small" quaternary type="error" @click="links.splice(i, 1)">删</n-button>
           </div>

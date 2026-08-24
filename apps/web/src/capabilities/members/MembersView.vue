@@ -60,11 +60,26 @@ onMounted(load)
             <h3 class="name">{{ m.nickname }}</h3>
             <p v-if="m.bio" class="bio">{{ m.bio }}</p>
             <div class="tags">
-              <n-tag v-for="s in m.skills.slice(0, 4)" :key="s" size="tiny" :bordered="false" class="tag">{{ s }}</n-tag>
+              <n-tag
+                v-for="s in m.skills.slice(0, 4)"
+                :key="s"
+                size="tiny"
+                :bordered="false"
+                class="tag"
+                >{{ s }}</n-tag
+              >
             </div>
             <div class="links">
-              <a v-if="m.github" :href="`https://github.com/${m.github}`" target="_blank" rel="noopener">GitHub</a>
-              <a v-for="l in m.links" :key="l.url" :href="l.url" target="_blank" rel="noopener">{{ l.label }}</a>
+              <a
+                v-if="m.github"
+                :href="`https://github.com/${m.github}`"
+                target="_blank"
+                rel="noopener"
+                >GitHub</a
+              >
+              <a v-for="l in m.links" :key="l.url" :href="l.url" target="_blank" rel="noopener">{{
+                l.label
+              }}</a>
             </div>
           </div>
         </div>
@@ -105,7 +120,9 @@ onMounted(load)
   border-radius: 8px;
   padding: 16px;
   text-align: center;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .card:hover {
   background: var(--cs-surface-2);

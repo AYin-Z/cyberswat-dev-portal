@@ -8,15 +8,36 @@ const { menu, routes } = composeUi(uiContributions)
 // 给能力包路由补面包屑 title（顶栏显示）；🟢-8：合并而非覆盖 meta（详情路由自带 title）
 const titledRoutes = routes.map((r) => {
   const menuItem = menu.find((m) => m.path === r.path)
-  return { ...r, meta: { ...(r.meta ?? {}), title: menuItem?.label ?? (r.meta?.title as string | undefined) ?? '' } }
+  return {
+    ...r,
+    meta: {
+      ...(r.meta ?? {}),
+      title: menuItem?.label ?? (r.meta?.title as string | undefined) ?? '',
+    },
+  }
 })
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'home', component: () => import('../views/HomeView.vue'), meta: { title: '工作台' } },
-    { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { title: '登录' } },
-    { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue'), meta: { title: '注册' } },
+    {
+      path: '/',
+      name: 'home',
+      component: () => import('../views/HomeView.vue'),
+      meta: { title: '工作台' },
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue'),
+      meta: { title: '登录' },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/RegisterView.vue'),
+      meta: { title: '注册' },
+    },
     // —— 能力包路由（自动合并）——
     ...titledRoutes,
     { path: '/:pathMatch(.*)*', redirect: '/' },

@@ -1,11 +1,15 @@
-import { SetMetadata, applyDecorators, createParamDecorator, ExecutionContext } from '@nestjs/common'
+import {
+  SetMetadata,
+  applyDecorators,
+  createParamDecorator,
+  ExecutionContext,
+} from '@nestjs/common'
 import type { Request } from 'express'
 import type { Role } from '@cyberswat/shared'
 
 /** 声明接口所需权限点：@RequirePermission('idea.promote') */
 export const PERMISSION_KEY = 'cyberswat:permission'
-export const RequirePermission = (permission: string) =>
-  SetMetadata(PERMISSION_KEY, permission)
+export const RequirePermission = (permission: string) => SetMetadata(PERMISSION_KEY, permission)
 
 /** 公开路由（登录/注册/健康检查等），跳过权限守卫 */
 export const PUBLIC_KEY = 'cyberswat:public'

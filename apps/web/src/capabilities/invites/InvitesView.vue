@@ -77,18 +77,29 @@ const columns: DataTableColumns<InviteItem> = [
     key: 'role',
     width: 100,
     render: (r) =>
-      h(NTag, { size: 'small', bordered: false, type: r.role === 'DEPT_LEADER' ? 'warning' : 'default' }, { default: () => (r.role === 'DEPT_LEADER' ? '干部' : '成员') }),
+      h(
+        NTag,
+        { size: 'small', bordered: false, type: r.role === 'DEPT_LEADER' ? 'warning' : 'default' },
+        { default: () => (r.role === 'DEPT_LEADER' ? '干部' : '成员') },
+      ),
   },
   {
     title: '状态',
     key: 'status',
     width: 90,
     render: (r) => {
-      const state = r.revoked ? { label: '已撤销', color: 'error' as const }
-        : new Date(r.expiresAt) < new Date() ? { label: '已过期', color: 'error' as const }
-        : r.usedCount >= r.maxUses ? { label: '已用完', color: 'warning' as const }
-        : { label: '有效', color: 'success' as const }
-      return h(NTag, { size: 'small', bordered: false, type: state.color }, { default: () => state.label })
+      const state = r.revoked
+        ? { label: '已撤销', color: 'error' as const }
+        : new Date(r.expiresAt) < new Date()
+          ? { label: '已过期', color: 'error' as const }
+          : r.usedCount >= r.maxUses
+            ? { label: '已用完', color: 'warning' as const }
+            : { label: '有效', color: 'success' as const }
+      return h(
+        NTag,
+        { size: 'small', bordered: false, type: state.color },
+        { default: () => state.label },
+      )
     },
   },
   {
@@ -135,7 +146,14 @@ onMounted(load)
     <page-header title="邀请管理" sub="成员入口由邀请制控制 — 生成链接发给候选人，凭链接注册">
       <template #actions>
         <n-button size="small" :loading="creating" @click="create('MEMBER')">＋ 邀请成员</n-button>
-        <n-button size="small" type="warning" secondary :loading="creating" @click="create('DEPT_LEADER')">＋ 邀请干部</n-button>
+        <n-button
+          size="small"
+          type="warning"
+          secondary
+          :loading="creating"
+          @click="create('DEPT_LEADER')"
+          >＋ 邀请干部</n-button
+        >
       </template>
     </page-header>
 

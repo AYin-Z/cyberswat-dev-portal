@@ -10,6 +10,11 @@ export const communityUi: UiContribution = {
   routes: [
     { path: '/posts', name: 'posts', component: PostListView },
     { path: '/posts/new', name: 'post-new', component: PostNewView },
-    { path: '/posts/:id', name: 'post-detail', component: PostDetailView, meta: { title: '帖子详情' } },
+    {
+      path: '/posts/:id',
+      name: 'post-detail',
+      component: PostDetailView,
+      meta: { title: '帖子详情' },
+    },
   ],
 }

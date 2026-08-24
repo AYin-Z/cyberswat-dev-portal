@@ -10,7 +10,11 @@ export const manifest: PluginManifest = {
   permissions: [
     { id: 'post.view', description: '浏览社区', defaultRoles: ['member', 'dept-leader', 'admin'] },
     { id: 'post.create', description: '发帖', defaultRoles: ['member', 'dept-leader', 'admin'] },
-    { id: 'post.comment', description: '评论/点赞', defaultRoles: ['member', 'dept-leader', 'admin'] },
+    {
+      id: 'post.comment',
+      description: '评论/点赞',
+      defaultRoles: ['member', 'dept-leader', 'admin'],
+    },
   ],
   tools: ['post.search'],
   events: ['post.mentioned'],

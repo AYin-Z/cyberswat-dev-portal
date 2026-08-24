@@ -5,14 +5,37 @@
 <template>
   <section class="card">
     <h1>示例能力包</h1>
-    <p>这个页面由 <code>capabilities/example/example.ui.ts</code> 声明，经组合器自动注册进菜单与路由。</p>
-    <p>新增能力包时：写 <code>src/capabilities/&lt;name&gt;/</code> 目录 + 在 <code>ui/manifest.ts</code> 追加一行。</p>
+    <p>
+      这个页面由
+      <code>capabilities/example/example.ui.ts</code> 声明，经组合器自动注册进菜单与路由。
+    </p>
+    <p>
+      新增能力包时：写 <code>src/capabilities/&lt;name&gt;/</code> 目录 + 在
+      <code>ui/manifest.ts</code> 追加一行。
+    </p>
   </section>
 </template>
 
 <style scoped>
-.card { background: var(--cs-surface-1); border: 1px solid var(--cs-hairline); border-radius: 8px; padding: 24px; }
-.card h1 { margin-bottom: 12px; font-size: 18px; }
-.card p { color: var(--cs-ink-muted); line-height: 1.8; font-size: 14px; }
-code { background: var(--cs-surface-2); padding: 2px 6px; border-radius: 4px; color: var(--cs-accent); }
+.card {
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-hairline);
+  border-radius: 8px;
+  padding: 24px;
+}
+.card h1 {
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+.card p {
+  color: var(--cs-ink-muted);
+  line-height: 1.8;
+  font-size: 14px;
+}
+code {
+  background: var(--cs-surface-2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--cs-accent);
+}
 </style>

@@ -40,13 +40,18 @@ export class IdeaService {
         id: 'idea.search',
         description: '搜索点子墙（按状态/技术栈），供 agent 了解部门创意池与人力缺口',
         params: {
-          status: { type: 'string', enum: ['RECRUITING', 'INCUBATING', 'PROMOTED', 'ARCHIVED'], description: '按状态筛选' },
+          status: {
+            type: 'string',
+            enum: ['RECRUITING', 'INCUBATING', 'PROMOTED', 'ARCHIVED'],
+            description: '按状态筛选',
+          },
           tech: { type: 'string', description: '按技术栈关键词筛选' },
           limit: { type: 'number', description: '条数上限，默认 20' },
         },
         requiredPermission: 'idea.view',
       },
-      async (params: unknown) => this.searchForTool(params as { status?: IdeaStatus; tech?: string; limit?: number }),
+      async (params: unknown) =>
+        this.searchForTool(params as { status?: IdeaStatus; tech?: string; limit?: number }),
     )
     this.tools.register(
       {
@@ -61,7 +66,12 @@ export class IdeaService {
         requiredPermission: 'idea.post',
       },
       async (params: unknown, ctx: ToolCallContext) => {
-        const p = params as { title: string; description: string; need: string; techStack?: string[] }
+        const p = params as {
+          title: string
+          description: string
+          need: string
+          techStack?: string[]
+        }
         return this.create(ctx.caller, p)
       },
     )
@@ -125,7 +135,10 @@ export class IdeaService {
   }
 
   /** 发布点子（所有成员可发） */
-  async create(authorId: string, data: { title: string; description: string; need: string; techStack?: string[] }): Promise<IdeaView> {
+  async create(
+    authorId: string,
+    data: { title: string; description: string; need: string; techStack?: string[] },
+  ): Promise<IdeaView> {
     if (!data.title || !data.description || !data.need) {
       throw new BadRequestException('标题/描述/缺什么 为必填')
     }
@@ -161,7 +174,11 @@ export class IdeaService {
   }
 
   /** 申请加入（"点子→人力"连接：发起人看到人力响应） */
-  async join(ideaId: string, userId: string, message?: string): Promise<{ joined: boolean; joinerCount: number }> {
+  async join(
+    ideaId: string,
+    userId: string,
+    message?: string,
+  ): Promise<{ joined: boolean; joinerCount: number }> {
     const idea = await this.prisma.idea.findUnique({ where: { id: ideaId } })
     if (!idea) throw new NotFoundException('点子不存在')
     if (idea.status === 'PROMOTED' || idea.status === 'ARCHIVED') {

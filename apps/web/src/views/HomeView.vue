@@ -95,77 +95,87 @@ onMounted(load)
     <template v-else>
       <!-- KPI 行 -->
       <div class="kpi-row">
-      <div class="kpi">
-        <span class="num tnum">{{ kpi.todo }}</span>
-        <span class="label">待接单</span>
-      </div>
-      <div class="kpi">
-        <span class="num tnum">{{ kpi.progress }}</span>
-        <span class="label">进行中</span>
-      </div>
-      <div class="kpi">
-        <span class="num tnum">{{ kpi.review }}</span>
-        <span class="label">待验收</span>
-      </div>
-      <div class="kpi">
-        <span class="num tnum accent">{{ kpi.unread }}</span>
-        <span class="label">未读通知</span>
-      </div>
-    </div>
-
-    <div class="cols">
-      <!-- 左 2/3 -->
-      <div class="main-col">
-        <section class="panel">
-          <h2 class="panel-title">我的任务</h2>
-          <div v-if="tasks.length" class="list">
-            <RouterLink v-for="t in tasks" :key="t.id" :to="'/tasks'" class="row">
-              <status-badge :status="t.status" type="task" />
-              <span class="t-title">{{ t.title }}</span>
-              <span v-if="t.projectName" class="t-proj">{{ t.projectName }}</span>
-            </RouterLink>
-          </div>
-          <empty-state v-else text="暂无任务" cta="去创建第一个任务" @action="$router.push('/tasks')" />
-        </section>
-
-        <section class="panel">
-          <h2 class="panel-title">招募中的点子</h2>
-          <div v-if="ideas.length" class="list">
-            <RouterLink v-for="i in ideas" :key="i.id" :to="`/ideas/${i.id}`" class="row">
-              <status-badge :status="i.status" type="idea" />
-              <span class="t-title">{{ i.title }}</span>
-              <span class="t-need">🔧 {{ i.need }}</span>
-            </RouterLink>
-          </div>
-          <empty-state v-else text="暂无招募中的点子" cta="发布第一个点子" @action="$router.push('/ideas/new')" />
-        </section>
+        <div class="kpi">
+          <span class="num tnum">{{ kpi.todo }}</span>
+          <span class="label">待接单</span>
+        </div>
+        <div class="kpi">
+          <span class="num tnum">{{ kpi.progress }}</span>
+          <span class="label">进行中</span>
+        </div>
+        <div class="kpi">
+          <span class="num tnum">{{ kpi.review }}</span>
+          <span class="label">待验收</span>
+        </div>
+        <div class="kpi">
+          <span class="num tnum accent">{{ kpi.unread }}</span>
+          <span class="label">未读通知</span>
+        </div>
       </div>
 
-      <!-- 右 1/3 -->
-      <div class="side-col">
-        <section class="panel">
-          <h2 class="panel-title">通知</h2>
-          <div v-if="notices.length" class="list">
-            <div v-for="n in notices" :key="n.id" class="row nrow" :class="{ unread: !n.read }">
-              <span class="n-type">{{ n.type }}</span>
-              <span class="t-title">{{ n.title }}</span>
+      <div class="cols">
+        <!-- 左 2/3 -->
+        <div class="main-col">
+          <section class="panel">
+            <h2 class="panel-title">我的任务</h2>
+            <div v-if="tasks.length" class="list">
+              <RouterLink v-for="t in tasks" :key="t.id" :to="'/tasks'" class="row">
+                <status-badge :status="t.status" type="task" />
+                <span class="t-title">{{ t.title }}</span>
+                <span v-if="t.projectName" class="t-proj">{{ t.projectName }}</span>
+              </RouterLink>
             </div>
-          </div>
-          <empty-state v-else text="暂无通知" />
-        </section>
+            <empty-state
+              v-else
+              text="暂无任务"
+              cta="去创建第一个任务"
+              @action="$router.push('/tasks')"
+            />
+          </section>
 
-        <section class="panel">
-          <h2 class="panel-title">最近公告</h2>
-          <div v-if="anns.length" class="list">
-            <RouterLink v-for="a in anns" :key="a.id" :to="'/announcements'" class="row">
-              <span v-if="a.important" class="imp">重要</span>
-              <span class="t-title" :class="{ unread: !a.read }">{{ a.title }}</span>
-            </RouterLink>
-          </div>
-          <empty-state v-else text="暂无公告" />
-        </section>
+          <section class="panel">
+            <h2 class="panel-title">招募中的点子</h2>
+            <div v-if="ideas.length" class="list">
+              <RouterLink v-for="i in ideas" :key="i.id" :to="`/ideas/${i.id}`" class="row">
+                <status-badge :status="i.status" type="idea" />
+                <span class="t-title">{{ i.title }}</span>
+                <span class="t-need">🔧 {{ i.need }}</span>
+              </RouterLink>
+            </div>
+            <empty-state
+              v-else
+              text="暂无招募中的点子"
+              cta="发布第一个点子"
+              @action="$router.push('/ideas/new')"
+            />
+          </section>
+        </div>
+
+        <!-- 右 1/3 -->
+        <div class="side-col">
+          <section class="panel">
+            <h2 class="panel-title">通知</h2>
+            <div v-if="notices.length" class="list">
+              <div v-for="n in notices" :key="n.id" class="row nrow" :class="{ unread: !n.read }">
+                <span class="n-type">{{ n.type }}</span>
+                <span class="t-title">{{ n.title }}</span>
+              </div>
+            </div>
+            <empty-state v-else text="暂无通知" />
+          </section>
+
+          <section class="panel">
+            <h2 class="panel-title">最近公告</h2>
+            <div v-if="anns.length" class="list">
+              <RouterLink v-for="a in anns" :key="a.id" :to="'/announcements'" class="row">
+                <span v-if="a.important" class="imp">重要</span>
+                <span class="t-title" :class="{ unread: !a.read }">{{ a.title }}</span>
+              </RouterLink>
+            </div>
+            <empty-state v-else text="暂无公告" />
+          </section>
+        </div>
       </div>
-    </div>
     </template>
   </section>
 

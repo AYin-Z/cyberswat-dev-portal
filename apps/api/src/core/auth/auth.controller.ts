@@ -40,7 +40,10 @@ export class AuthController {
   /** 注册：必须携带有效邀请令牌（角色由邀请决定） */
   @Public()
   @Post('register')
-  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response): Promise<LoginResult> {
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResult> {
     const result = await this.auth.register(dto.email, dto.password, dto.nickname, dto.inviteToken)
     setSessionCookie(res, result.accessToken)
     return result
@@ -48,7 +51,10 @@ export class AuthController {
 
   @Public()
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response): Promise<LoginResult> {
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResult> {
     const result = await this.auth.login(dto.email, dto.password)
     setSessionCookie(res, result.accessToken)
     return result
@@ -57,7 +63,10 @@ export class AuthController {
   /** refresh 轮换：旧 token 作废，签发新对 */
   @Public()
   @Post('refresh')
-  async refresh(@Body() dto: RefreshDto, @Res({ passthrough: true }) res: Response): Promise<LoginResult> {
+  async refresh(
+    @Body() dto: RefreshDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResult> {
     const result = await this.auth.refresh(dto.refreshToken)
     setSessionCookie(res, result.accessToken)
     return result

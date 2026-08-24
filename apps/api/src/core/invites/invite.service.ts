@@ -48,7 +48,9 @@ export class InviteService {
       },
     })
     const frontendOrigin = process.env.FRONTEND_ORIGIN ?? 'http://localhost:5175'
-    this.logger.log(`[invite] 创建邀请 (role=${row.role}, expires=${expiresAt.toISOString()}, maxUses=${row.maxUses}) by ${input.createdBy}`)
+    this.logger.log(
+      `[invite] 创建邀请 (role=${row.role}, expires=${expiresAt.toISOString()}, maxUses=${row.maxUses}) by ${input.createdBy}`,
+    )
     return { token, link: `${frontendOrigin}/register?invite=${token}`, invite: this.toView(row) }
   }
 
@@ -76,7 +78,10 @@ export class InviteService {
 
   /** 列表（不含明文令牌） */
   async list(): Promise<InviteView[]> {
-    const rows = await this.prisma.coreInvite.findMany({ orderBy: { createdAt: 'desc' }, take: 100 })
+    const rows = await this.prisma.coreInvite.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
     return rows.map((r) => this.toView(r))
   }
 

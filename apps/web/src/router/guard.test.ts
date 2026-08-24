@@ -14,7 +14,13 @@ import { router } from './index'
 function stubFetchEmpty() {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })),
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    ),
   )
 }
 

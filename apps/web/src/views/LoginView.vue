@@ -69,8 +69,22 @@ onMounted(() => {
       <p v-if="error" class="error">{{ error }}</p>
 
       <form class="form" @submit.prevent="submit">
-        <input v-model="email" type="email" placeholder="邮箱" aria-label="邮箱" autocomplete="email" required />
-        <input v-model="password" type="password" placeholder="密码" aria-label="密码" autocomplete="current-password" required />
+        <input
+          v-model="email"
+          type="email"
+          placeholder="邮箱"
+          aria-label="邮箱"
+          autocomplete="email"
+          required
+        />
+        <input
+          v-model="password"
+          type="password"
+          placeholder="密码"
+          aria-label="密码"
+          autocomplete="current-password"
+          required
+        />
         <button type="submit" class="btn primary" :disabled="busy">
           {{ busy ? '登录中…' : '登录' }}
         </button>
@@ -150,7 +164,9 @@ onMounted(() => {
   color: var(--cs-ink);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .form input:focus {
   border-color: var(--cs-accent);

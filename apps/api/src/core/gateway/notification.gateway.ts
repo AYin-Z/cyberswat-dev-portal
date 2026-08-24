@@ -81,7 +81,10 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   /** 公告发布 → 全成员推送 */
   @OnEvent('announcement.published')
   async onAnnouncement(payload: CoreEventMap['announcement.published']) {
-    const users = await this.prisma.coreUser.findMany({ where: { active: true }, select: { id: true } })
+    const users = await this.prisma.coreUser.findMany({
+      where: { active: true },
+      select: { id: true },
+    })
     for (const u of users) {
       await this.notifications.notify({
         userId: u.id,
@@ -107,7 +110,10 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     if (!task) return
     const targets = new Set([task.assigneeId, task.creatorId].filter(Boolean) as string[])
     const label: Record<string, string> = {
-      TODO: '待接单', IN_PROGRESS: '进行中', REVIEW: '待验收', DONE: '已完成',
+      TODO: '待接单',
+      IN_PROGRESS: '进行中',
+      REVIEW: '待验收',
+      DONE: '已完成',
     }
     for (const uid of targets) {
       await this.notifications.notify({
@@ -127,7 +133,10 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   /** 点子发布 → 全成员推送（创意池更新） */
   @OnEvent('idea.created')
   async onIdeaCreated(payload: CoreEventMap['idea.created']) {
-    const idea = await this.prisma.idea.findUnique({ where: { id: payload.ideaId }, select: { title: true } })
+    const idea = await this.prisma.idea.findUnique({
+      where: { id: payload.ideaId },
+      select: { title: true },
+    })
     if (!idea) return
     this.server.to('all').emit('notification:new', {
       type: 'idea',
@@ -140,7 +149,13 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   @OnEvent('notification.created')
   async onNotificationCreated(payload: {
     userId: string
-    notification: { id: string; type: string; title: string; content: string | null; link: string | null }
+    notification: {
+      id: string
+      type: string
+      title: string
+      content: string | null
+      link: string | null
+    }
   }) {
     const { userId, notification } = payload
     this.server.to(`user:${userId}`).emit('notification:new', notification)

@@ -55,7 +55,14 @@ onMounted(load)
         <h3 class="c-title">{{ p.name }}</h3>
         <p class="desc">{{ p.description }}</p>
         <div class="tags">
-          <n-tag v-for="t in p.techStack.slice(0, 4)" :key="t" size="tiny" :bordered="false" class="tag">{{ t }}</n-tag>
+          <n-tag
+            v-for="t in p.techStack.slice(0, 4)"
+            :key="t"
+            size="tiny"
+            :bordered="false"
+            class="tag"
+            >{{ t }}</n-tag
+          >
         </div>
         <div class="progress-row">
           <span class="p-label tnum">{{ p.doneTaskCount }}/{{ p.taskCount }}</span>
@@ -72,7 +79,12 @@ onMounted(load)
       </RouterLink>
     </div>
 
-    <empty-state v-else text="暂无项目 — 去点子墙把好点子转正" cta="去点子墙" @action="$router.push('/ideas')" />
+    <empty-state
+      v-else
+      text="暂无项目 — 去点子墙把好点子转正"
+      cta="去点子墙"
+      @action="$router.push('/ideas')"
+    />
   </section>
 </template>
 
@@ -98,7 +110,9 @@ onMounted(load)
   padding: 16px;
   text-decoration: none;
   color: var(--cs-ink);
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .card:hover {
   background: var(--cs-surface-2);

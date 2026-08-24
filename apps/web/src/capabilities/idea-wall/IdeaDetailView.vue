@@ -78,7 +78,9 @@ onMounted(load)
       <p class="desc">{{ idea.description }}</p>
       <div class="need-box">🔧 需要：{{ idea.need }}</div>
       <div class="tags">
-        <n-tag v-for="t in idea.techStack" :key="t" size="small" :bordered="false" class="tag">{{ t }}</n-tag>
+        <n-tag v-for="t in idea.techStack" :key="t" size="small" :bordered="false" class="tag">{{
+          t
+        }}</n-tag>
       </div>
       <p class="meta">
         发起人：{{ idea.author.nickname }}
@@ -86,8 +88,13 @@ onMounted(load)
         · {{ idea.createdAt.slice(0, 10) }}
       </p>
 
-      <div v-if="!idea.joined && idea.status !== 'PROMOTED' && idea.status !== 'ARCHIVED'" class="join-zone">
-        <n-button v-if="!showJoinForm" type="primary" @click="showJoinForm = true">＋ 我想加入</n-button>
+      <div
+        v-if="!idea.joined && idea.status !== 'PROMOTED' && idea.status !== 'ARCHIVED'"
+        class="join-zone"
+      >
+        <n-button v-if="!showJoinForm" type="primary" @click="showJoinForm = true"
+          >＋ 我想加入</n-button
+        >
         <div v-else class="join-form">
           <n-input v-model:value="joinMessage" placeholder="我能做什么？（技能/时间）" />
           <n-button type="primary" @click="join">确认加入</n-button>
@@ -101,7 +108,14 @@ onMounted(load)
           <div class="joiner-head">
             <span class="name">{{ j.nickname }}</span>
             <span v-if="j.grade" class="grade">{{ j.grade }}级</span>
-            <n-tag v-for="s in j.skills.slice(0, 3)" :key="s" size="tiny" :bordered="false" class="tag">{{ s }}</n-tag>
+            <n-tag
+              v-for="s in j.skills.slice(0, 3)"
+              :key="s"
+              size="tiny"
+              :bordered="false"
+              class="tag"
+              >{{ s }}</n-tag
+            >
           </div>
           <p v-if="j.message" class="msg">"{{ j.message }}"</p>
         </div>

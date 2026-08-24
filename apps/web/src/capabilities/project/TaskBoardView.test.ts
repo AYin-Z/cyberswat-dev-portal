@@ -59,7 +59,10 @@ const tasks = [
 ]
 
 function jsonOk(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 function mockApi({ fetchMock }: { fetchMock: ReturnType<typeof vi.fn> }) {
@@ -169,17 +172,23 @@ describe('TaskBoardView.vue', () => {
     // 弹窗打开（teleport 到 body），此时尚未请求 API
     const modalInput = document.querySelector('.n-modal textarea') as HTMLTextAreaElement | null
     expect(modalInput).toBeTruthy()
-    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/tasks/t2/submit'))).toBe(false)
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/tasks/t2/submit'))).toBe(
+      false,
+    )
 
     modalInput!.value = 'PR #42'
     modalInput!.dispatchEvent(new Event('input', { bubbles: true }))
     await flushPromises()
-    const confirmBtn = Array.from(document.querySelectorAll('.n-modal button')).find((b) => b.textContent === '提交')
+    const confirmBtn = Array.from(document.querySelectorAll('.n-modal button')).find(
+      (b) => b.textContent === '提交',
+    )
     expect(confirmBtn).toBeTruthy()
     confirmBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await flushPromises()
 
-    const submitCall = fetchMock.mock.calls.find((c) => String(c[0]).includes('/api/tasks/t2/submit'))
+    const submitCall = fetchMock.mock.calls.find((c) =>
+      String(c[0]).includes('/api/tasks/t2/submit'),
+    )
     expect(submitCall).toBeTruthy()
     const body = JSON.parse(String((submitCall![1] as RequestInit).body))
     expect(body).toHaveProperty('note')
@@ -200,11 +209,15 @@ describe('TaskBoardView.vue', () => {
     })
     await flushPromises()
 
-    const confirmBtn = Array.from(document.querySelectorAll('.n-modal button')).find((b) => b.textContent === '提交')
+    const confirmBtn = Array.from(document.querySelectorAll('.n-modal button')).find(
+      (b) => b.textContent === '提交',
+    )
     confirmBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await flushPromises()
 
-    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/tasks/t2/submit'))).toBe(false)
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('/api/tasks/t2/submit'))).toBe(
+      false,
+    )
     const msg = document.body.querySelector('.n-message')
     expect(msg?.textContent).toContain('请填写提交说明')
   })
@@ -223,7 +236,9 @@ describe('TaskBoardView.vue', () => {
     })
     await flushPromises()
 
-    const reviewCall = fetchMock.mock.calls.find((c) => String(c[0]).includes('/api/tasks/t3/review'))
+    const reviewCall = fetchMock.mock.calls.find((c) =>
+      String(c[0]).includes('/api/tasks/t3/review'),
+    )
     expect(reviewCall).toBeTruthy()
     expect(JSON.parse(String((reviewCall![1] as RequestInit).body))).toEqual({ approve: true })
   })
@@ -257,12 +272,16 @@ describe('TaskBoardView.vue', () => {
     await w.find('button').trigger('click') // ＋ 新任务（弹窗打开，内容 teleport 到 body）
     await flushPromises()
     // 弹窗内的创建按钮（标题为空直接 return）
-    const createBtnEl = Array.from(document.querySelectorAll('button')).find((b) => b.textContent === '创建')
+    const createBtnEl = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent === '创建',
+    )
     expect(createBtnEl).toBeTruthy()
     createBtnEl!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await flushPromises()
 
-    const postCall = fetchMock.mock.calls.find((c) => String(c[0]) === '/api/tasks' && (c[1] as RequestInit)?.method === 'POST')
+    const postCall = fetchMock.mock.calls.find(
+      (c) => String(c[0]) === '/api/tasks' && (c[1] as RequestInit)?.method === 'POST',
+    )
     expect(postCall).toBeUndefined()
   })
 
@@ -273,16 +292,22 @@ describe('TaskBoardView.vue', () => {
 
     await w.find('button').trigger('click')
     await flushPromises()
-    const titleInputEl = document.querySelector('.n-modal input[placeholder="任务标题"]') as HTMLInputElement | null
+    const titleInputEl = document.querySelector(
+      '.n-modal input[placeholder="任务标题"]',
+    ) as HTMLInputElement | null
     expect(titleInputEl).toBeTruthy()
     titleInputEl!.value = '新任务标题'
     titleInputEl!.dispatchEvent(new Event('input', { bubbles: true }))
     await flushPromises()
-    const createBtnEl = Array.from(document.querySelectorAll('button')).find((b) => b.textContent === '创建')
+    const createBtnEl = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent === '创建',
+    )
     createBtnEl!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await flushPromises()
 
-    const postCall = fetchMock.mock.calls.find((c) => String(c[0]) === '/api/tasks' && (c[1] as RequestInit)?.method === 'POST')
+    const postCall = fetchMock.mock.calls.find(
+      (c) => String(c[0]) === '/api/tasks' && (c[1] as RequestInit)?.method === 'POST',
+    )
     expect(postCall).toBeTruthy()
     const body = JSON.parse(String((postCall![1] as RequestInit).body))
     expect(body.title).toBe('新任务标题')

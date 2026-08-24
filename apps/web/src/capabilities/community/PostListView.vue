@@ -22,7 +22,12 @@ const board = ref('')
 const error = ref('')
 const loading = ref(true)
 
-const boardLabel: Record<string, string> = { GENERAL: '灌水', HELP: '求助', SHARE: '分享', RECRUIT: '招人' }
+const boardLabel: Record<string, string> = {
+  GENERAL: '灌水',
+  HELP: '求助',
+  SHARE: '分享',
+  RECRUIT: '招人',
+}
 const boardColor: Record<string, 'default' | 'error' | 'success' | 'warning'> = {
   GENERAL: 'default',
   HELP: 'error',
@@ -76,12 +81,14 @@ onMounted(load)
 
     <div v-else-if="posts.length" class="list">
       <RouterLink v-for="p in posts" :key="p.id" :to="`/posts/${p.id}`" class="item">
-        <n-tag :type="boardColor[p.board]" size="small" :bordered="false" class="b">{{ boardLabel[p.board] }}</n-tag>
+        <n-tag :type="boardColor[p.board]" size="small" :bordered="false" class="b">{{
+          boardLabel[p.board]
+        }}</n-tag>
         <h3 class="p-title">{{ p.title }}</h3>
         <p class="preview">{{ p.content }}</p>
         <p class="meta tnum">
-          {{ p.author.nickname }} · {{ p.createdAt.slice(0, 16).replace('T', ' ') }}
-          · 💬 {{ p.commentCount }} · 👍 {{ p.likeCount }}
+          {{ p.author.nickname }} · {{ p.createdAt.slice(0, 16).replace('T', ' ') }} · 💬
+          {{ p.commentCount }} · 👍 {{ p.likeCount }}
         </p>
       </RouterLink>
     </div>
@@ -122,7 +129,9 @@ onMounted(load)
   padding: 14px 16px;
   text-decoration: none;
   color: var(--cs-ink);
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .item:hover {
   background: var(--cs-surface-2);

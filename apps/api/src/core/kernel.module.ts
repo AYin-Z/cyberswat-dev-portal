@@ -54,7 +54,16 @@ import { CommunityModule } from '../capabilities/community/community.module'
   ],
   controllers: [HealthController, MeController],
   providers: [IdeaMatchService],
-  exports: [PluginsModule, PermissionsModule, EventsModule, ToolsModule, AuthModule, UsersModule, InvitesModule, NotificationsModule],
+  exports: [
+    PluginsModule,
+    PermissionsModule,
+    EventsModule,
+    ToolsModule,
+    AuthModule,
+    UsersModule,
+    InvitesModule,
+    NotificationsModule,
+  ],
 })
 export class KernelModule implements OnModuleInit {
   constructor(
@@ -68,9 +77,21 @@ export class KernelModule implements OnModuleInit {
     this.permissions.registerMany([
       { id: 'invite.create', description: '创建成员邀请', defaultRoles: ['dept-leader', 'admin'] },
       { id: 'invite.list', description: '查看/撤销邀请', defaultRoles: ['dept-leader', 'admin'] },
-      { id: 'notification.view', description: '查看通知', defaultRoles: ['member', 'dept-leader', 'admin'] },
-      { id: 'audit.view', description: '查看工具审计与审批队列', defaultRoles: ['dept-leader', 'admin'] },
-      { id: 'user.freeze', description: '冻结成员账号（级联撤销会话与agent授权）', defaultRoles: ['admin'] },
+      {
+        id: 'notification.view',
+        description: '查看通知',
+        defaultRoles: ['member', 'dept-leader', 'admin'],
+      },
+      {
+        id: 'audit.view',
+        description: '查看工具审计与审批队列',
+        defaultRoles: ['dept-leader', 'admin'],
+      },
+      {
+        id: 'user.freeze',
+        description: '冻结成员账号（级联撤销会话与agent授权）',
+        defaultRoles: ['admin'],
+      },
     ])
 
     // agent 开邀请 = 拉人进系统，危险操作 → 需部长审批
@@ -79,7 +100,11 @@ export class KernelModule implements OnModuleInit {
         id: 'invite.create',
         description: '创建成员邀请链接（拉新人进系统，需部长审批）',
         params: {
-          role: { type: 'string', description: '授予角色: MEMBER/DEPT_LEADER', enum: ['MEMBER', 'DEPT_LEADER'] },
+          role: {
+            type: 'string',
+            description: '授予角色: MEMBER/DEPT_LEADER',
+            enum: ['MEMBER', 'DEPT_LEADER'],
+          },
           expiresInDays: { type: 'number', description: '有效期天数，默认 7' },
           maxUses: { type: 'number', description: '可用名额，默认 1' },
         },
@@ -87,16 +112,24 @@ export class KernelModule implements OnModuleInit {
         requiresApproval: true,
       },
       async (params: unknown, ctx: ToolCallContext) => {
-        const p = params as { role?: 'MEMBER' | 'DEPT_LEADER'; expiresInDays?: number; maxUses?: number }
+        const p = params as {
+          role?: 'MEMBER' | 'DEPT_LEADER'
+          expiresInDays?: number
+          maxUses?: number
+        }
         const res = await this.invites.create({
           createdBy: ctx.caller,
           role: p.role ?? 'MEMBER',
           expiresInDays: p.expiresInDays,
           maxUses: p.maxUses,
         })
-        return { inviteId: res.invite.id, link: res.link, expiresAt: res.invite.expiresAt, maxUses: res.invite.maxUses }
+        return {
+          inviteId: res.invite.id,
+          link: res.link,
+          expiresAt: res.invite.expiresAt,
+          maxUses: res.invite.maxUses,
+        }
       },
     )
   }
 }
-

@@ -77,7 +77,10 @@ export async function api<T = unknown>(
     let message = `请求失败 (${res.status})`
     let fields: Record<string, string> | undefined
     try {
-      const body = (await res.json()) as { message?: string | string[]; fields?: Record<string, string> }
+      const body = (await res.json()) as {
+        message?: string | string[]
+        fields?: Record<string, string>
+      }
       if (Array.isArray(body.message)) message = body.message[0] ?? message
       else if (body.message) message = body.message
       fields = body.fields

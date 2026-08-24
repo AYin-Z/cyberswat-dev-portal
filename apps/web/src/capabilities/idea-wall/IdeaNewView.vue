@@ -27,7 +27,12 @@ async function submit() {
       .filter(Boolean)
     await api('/api/ideas', {
       method: 'POST',
-      body: JSON.stringify({ title: title.value, description: description.value, need: need.value, techStack }),
+      body: JSON.stringify({
+        title: title.value,
+        description: description.value,
+        need: need.value,
+        techStack,
+      }),
     })
     message.success('点子已发布')
     router.push('/ideas')
@@ -48,7 +53,12 @@ async function submit() {
         <n-input v-model:value="title" placeholder="一句话说清做什么" maxlength="80" />
       </n-form-item>
       <n-form-item label="详细描述">
-        <n-input v-model:value="description" type="textarea" placeholder="痛点 / 预想方案 / 目标用户" :rows="5" />
+        <n-input
+          v-model:value="description"
+          type="textarea"
+          placeholder="痛点 / 预想方案 / 目标用户"
+          :rows="5"
+        />
       </n-form-item>
       <n-form-item label="缺什么？">
         <n-input v-model:value="need" placeholder="如：缺 1 个会 Vue 的前端 + 1 个会 Node 的后端" />
