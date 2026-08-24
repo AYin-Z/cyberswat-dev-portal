@@ -1,0 +1,60 @@
+name: CI
+
+# 门禁：install → lint → typecheck → test → build；只做构建验证门禁，**不自动部署**。
+# 部署仍走宿主链路（见 AGENTS.md 部署记录：宿主 pnpm build → pnpm deploy --prod --legacy → 镜像 COPY）。
+# api 的 e2e 测试需要 cyberswat_test 隔离库：此处用 postgres service 提供，先 db push 建 schema 再跑 test。
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cyberswat
+          POSTGRES_PASSWORD: cyberswat
+          POSTGRES_DB: cyberswat_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cyberswat -d cyberswat_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Prepare test database
+        run: pnpm --filter @cyberswat/dev-api exec prisma db push --skip-generate
+        env:
+          DATABASE_URL: postgresql://cyberswat:cyberswat@localhost:5432/cyberswat_test?schema=public
+
+      - name: Test
+        run: pnpm -r test
+        env:
+          DATABASE_URL: postgresql://cyberswat:cyberswat@localhost:5432/cyberswat_test?schema=public
+
+      - name: Build
+        run: pnpm -r build

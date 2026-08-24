@@ -2,6 +2,13 @@ import { defineConfig } from 'vitest/config'
 import swc from 'unplugin-swc'
 import { fileURLToPath } from 'node:url'
 
+// e2e 测试隔离库（cyberswat_test）与环境变量：仅本地开发/CI 使用，非生产凭证。
+// 生产 JWT_SECRET/DB 密码存于宿主 ~/.cyberswat-dev-prod.env（600），不入库。
+// DATABASE_URL 可由环境变量覆盖（CI 用 postgres service 注入），本地默认连 127.0.0.1:5433。
+const TEST_DATABASE_URL =
+  process.env.DATABASE_URL ??
+  'postgresql://cyberswat:cyberswat@127.0.0.1:5433/cyberswat_test?schema=public'
+
 export default defineConfig({
   plugins: [swc.vite({ tsconfigFile: './tsconfig.json' })],
   resolve: {
@@ -17,10 +24,8 @@ export default defineConfig({
     include: ['test/**/*.spec.ts'],
     testTimeout: 30000,
     hookTimeout: 60000,
-    // e2e 测试隔离库（cyberswat_test）与环境变量：仅本地开发/CI 使用，非生产凭证。
-    // 生产 JWT_SECRET/DB 密码存于宿主 ~/.cyberswat-dev-prod.env（600），不入库。
     env: {
-      DATABASE_URL: 'postgresql://cyberswat:cyberswat@127.0.0.1:5433/cyberswat_test?schema=public',
+      DATABASE_URL: TEST_DATABASE_URL,
       JWT_SECRET: 'dev-only-test-jwt-secret-0123456789abcdef0123456789',
     },
   },
