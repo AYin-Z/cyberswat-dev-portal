@@ -3,12 +3,23 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { api } from '../../lib/api'
-import { NTag, NInput, NButton, NSpin, NModal, NForm, NFormItem, useDialog, useMessage } from 'naive-ui'
+import {
+  NTag,
+  NInput,
+  NButton,
+  NSpin,
+  NModal,
+  NForm,
+  NFormItem,
+  useDialog,
+  useMessage,
+} from 'naive-ui'
 
 const auth = useAuthStore()
 const route = useRoute()
 const message = useMessage()
 const dialog = useDialog()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 文章详情来自未类型化的 API 响应，模板仅做只读展示
 const post = ref<any>(null)
 const error = ref('')
 const loading = ref(true)
@@ -20,7 +31,12 @@ const showReport = ref(false)
 const reportReason = ref('')
 const reporting = ref(false)
 
-const boardLabel: Record<string, string> = { GENERAL: '灌水', HELP: '求助', SHARE: '分享', RECRUIT: '招人' }
+const boardLabel: Record<string, string> = {
+  GENERAL: '灌水',
+  HELP: '求助',
+  SHARE: '分享',
+  RECRUIT: '招人',
+}
 
 async function load() {
   loading.value = true
@@ -114,7 +130,9 @@ onMounted(load)
     <template v-else-if="post">
       <n-tag size="small" :bordered="false" class="b">{{ boardLabel[post.board] }}</n-tag>
       <h1 class="title">{{ post.title }}</h1>
-      <p class="meta">{{ post.author.nickname }} · {{ post.createdAt.slice(0, 16).replace('T', ' ') }}</p>
+      <p class="meta">
+        {{ post.author.nickname }} · {{ post.createdAt.slice(0, 16).replace('T', ' ') }}
+      </p>
       <p class="content">{{ post.content }}</p>
 
       <div class="post-actions">
@@ -123,7 +141,11 @@ onMounted(load)
         </n-button>
         <n-button size="small" quaternary @click="report">举报</n-button>
         <n-button
-          v-if="auth.user?.id === post.author.id || auth.user?.role === 'dept-leader' || auth.user?.role === 'admin'"
+          v-if="
+            auth.user?.id === post.author.id ||
+            auth.user?.role === 'dept-leader' ||
+            auth.user?.role === 'admin'
+          "
           size="small"
           quaternary
           type="error"
@@ -157,7 +179,12 @@ onMounted(load)
     </template>
 
     <!-- 🟡-4：举报原因弹窗 -->
-    <n-modal v-model:show="showReport" preset="card" title="举报帖子" style="width: 440px; max-width: calc(100vw - 32px)">
+    <n-modal
+      v-model:show="showReport"
+      preset="card"
+      title="举报帖子"
+      style="width: 440px; max-width: calc(100vw - 32px)"
+    >
       <n-form label-placement="top">
         <n-form-item label="举报原因">
           <n-input

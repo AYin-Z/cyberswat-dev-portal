@@ -2,9 +2,24 @@ packages:
   - apps/*
   - packages/*
 
+# pnpm 11 构建脚本批准：仅此文件中的 allowBuilds 生效（package.json 的 pnpm 字段已被忽略）。
+# true = 允许该依赖运行安装后脚本；false = 显式禁止（不会报 ERR_PNPM_IGNORED_BUILDS）。
+# @swc/core 的 postinstall 只是校验/兜底下载 wasm，原生二进制由可选平台包 @swc/core-linux-x64-gnu 提供，故显式 false。
 allowBuilds:
-  "@prisma/client": true
-  "@prisma/engines": true
-  '@swc/core': set this to true or false
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@swc/core': false
   esbuild: true
   prisma: true
+
+# pnpm catalog：跨包重复声明的公共依赖版本中心化（单一事实源）。
+# TypeScript 曾三处漂移（api ~5.7.2 / web ~5.8.0 / shared ~5.7.2），统一为 ~5.7.2（vue-tsc 3 要求 >=5.0.0）。
+# vitest 与 socket.io-client 在 api/web 两包重复声明，统一引用。
+catalog:
+  typescript: ~5.7.2
+  vitest: ^4.1.10
+  socket.io-client: ^4.8.3
+
+# 关闭 pnpm 运行脚本前的自动依赖检查：否则 `pnpm deploy --prod --legacy` 会重置 workspace 态为
+# 生产模式，导致后续 `pnpm <script>` 触发一次 `pnpm install --production` 清空 devDependencies。
+verifyDepsBeforeRun: false

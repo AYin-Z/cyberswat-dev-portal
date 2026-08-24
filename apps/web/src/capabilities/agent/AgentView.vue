@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useAuthStore } from '../../stores/auth'
 import { api } from '../../lib/api'
 import PageHeader from '../../components/PageHeader.vue'
 import { NTag, NSpin, NCollapse, NCollapseItem, useMessage } from 'naive-ui'
 
-const auth = useAuthStore()
 const message = useMessage()
 const tools = ref<{ id: string; description: string; requiresApproval: boolean }[]>([])
 const loading = ref(true)
-const copied = ref('')
 const registering = ref(false)
 const authorizedClients = ref<{ id: string; name: string; scope: string }[]>([])
 
 async function load() {
   try {
-    tools.value = await api<{ id: string; description: string; requiresApproval: boolean }[]>('/api/tools')
+    tools.value =
+      await api<{ id: string; description: string; requiresApproval: boolean }[]>('/api/tools')
   } catch (e) {
     message.error((e as Error).message)
   } finally {
@@ -24,7 +22,9 @@ async function load() {
 }
 
 const origin = window.location.origin
-const mcpUrl = computed(() => (window.location.protocol === 'https:' ? origin : 'http://127.0.0.1:8094'))
+const mcpUrl = computed(() =>
+  window.location.protocol === 'https:' ? origin : 'http://127.0.0.1:8094',
+)
 
 const configs = computed(() => ({
   claude: `{
@@ -66,7 +66,7 @@ async function startAuth() {
   // 🟡-3：先 DCR 注册客户端 → 再跳授权页（授权完成后在 callback 页面完成）
   registering.value = true
   try {
-    const res = await fetch(`${mcpUrl}/register`, {
+    const res = await fetch(`${mcpUrl.value}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -87,8 +87,14 @@ async function startAuth() {
     const state = Math.random().toString(36).slice(2)
     sessionStorage.setItem('agent_oauth_state', state)
     const verifier = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
-    const challenge = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
-      .then((buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''))
+    const challenge = await crypto.subtle
+      .digest('SHA-256', new TextEncoder().encode(verifier))
+      .then((buf) =>
+        btoa(String.fromCharCode(...new Uint8Array(buf)))
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, ''),
+      )
     localStorage.setItem('agent_verifier', verifier)
     const params = new URLSearchParams({
       response_type: 'code',
@@ -99,7 +105,7 @@ async function startAuth() {
       state,
       scope: 'announcement.view idea.view task.view post.view notification.view',
     })
-    window.location.href = `${mcpUrl}/authorize?${params}`
+    window.location.href = `${mcpUrl.value}/authorize?${params}`
   } finally {
     registering.value = false
   }
@@ -133,7 +139,7 @@ async function exchangeCode(code: string) {
     client_id: clientId,
     code_verifier: verifier,
   })
-  const res = await fetch(`${mcpUrl}/token`, {
+  const res = await fetch(`${mcpUrl.value}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
@@ -160,7 +166,13 @@ onMounted(() => {
   handleCallback()
   const hasToken = localStorage.getItem('agent_access')
   if (hasToken) {
-    authorizedClients.value = [{ id: localStorage.getItem('agent_client_id') ?? 'agent', name: '我的开发部助手', scope: '已授权' }]
+    authorizedClients.value = [
+      {
+        id: localStorage.getItem('agent_client_id') ?? 'agent',
+        name: '我的开发部助手',
+        scope: '已授权',
+      },
+    ]
   }
 })
 </script>
@@ -172,7 +184,10 @@ onMounted(() => {
     <div class="grid">
       <div class="panel">
         <h2 class="panel-title">① 授权你的助手</h2>
-        <p class="desc">点击授权后自动完成：客户端注册（DCR）→ GitHub 式授权 → 令牌存储。授权后你的助手可经 MCP 调用系统工具。</p>
+        <p class="desc">
+          点击授权后自动完成：客户端注册（DCR）→ GitHub 式授权 → 令牌存储。授权后你的助手可经 MCP
+          调用系统工具。
+        </p>
         <button class="btn-primary" :disabled="registering" @click="startAuth">
           {{ registering ? '注册中…' : '授权我的助手' }}
         </button>
@@ -212,7 +227,9 @@ onMounted(() => {
         <div v-for="t in tools" :key="t.id" class="tool">
           <span class="t-id mono">{{ t.id }}</span>
           <span class="t-desc">{{ t.description }}</span>
-          <n-tag v-if="t.requiresApproval" size="tiny" type="warning" :bordered="false">需审批</n-tag>
+          <n-tag v-if="t.requiresApproval" size="tiny" type="warning" :bordered="false"
+            >需审批</n-tag
+          >
         </div>
         <p v-if="!tools.length" class="hint">暂无可见工具</p>
       </div>
@@ -220,7 +237,10 @@ onMounted(() => {
 
     <div class="panel">
       <h2 class="panel-title">④ 内置助理 bot</h2>
-      <p class="desc">在社区帖子/评论中 <b>@dev-assistant</b> 即可唤起：可查公告、招募中的点子、任务进展、社区帖子。</p>
+      <p class="desc">
+        在社区帖子/评论中
+        <b>@dev-assistant</b> 即可唤起：可查公告、招募中的点子、任务进展、社区帖子。
+      </p>
       <p class="hint">示例：「@dev-assistant 最近有什么公告？」</p>
     </div>
   </section>
@@ -301,7 +321,9 @@ onMounted(() => {
   padding: 8px 14px; /* 🟡-6：26px → ~38px */
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s; /* 🟢-7 */
+  transition:
+    background 0.15s,
+    color 0.15s; /* 🟢-7 */
 }
 .copy-btn:hover {
   background: var(--cs-surface-3);

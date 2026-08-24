@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Param, Post } from '@nestjs/common'
+import { Controller, ForbiddenException, Param, Post } from '@nestjs/common'
 import { UsersService } from './users.service'
 import { PrismaService } from '../db/prisma.service'
 import { Authorize, CurrentUser, type AuthUser } from '../permissions/permission.decorator'

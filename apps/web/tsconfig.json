@@ -1,15 +1,11 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2023",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "strict": true,
     "jsx": "preserve",
     "jsxImportSource": "vue",
     "noEmit": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "baseUrl": ".",
     "paths": {

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
 import { PluginRegistry } from '../../core/plugins/plugin.registry'
 import { PermissionsService } from '../../core/permissions/permissions.service'
-import { ToolRegistry, type ToolCallContext } from '../../core/tools/tool.registry'
+import { ToolRegistry } from '../../core/tools/tool.registry'
 import { EventBus } from '../../core/events/event-bus'
 import { manifest } from './example.manifest'
 
@@ -28,7 +28,11 @@ export class ExampleCapability implements OnModuleInit {
 
     // 3. 注册工具
     this.tools.register(
-      { id: 'example.ping', description: '示例：回声工具，返回传入的消息', params: { message: { type: 'string', description: '任意消息' } } },
+      {
+        id: 'example.ping',
+        description: '示例：回声工具，返回传入的消息',
+        params: { message: { type: 'string', description: '任意消息' } },
+      },
       async (params: unknown) => ({ pong: (params as { message?: string }).message ?? 'pong' }),
     )
     this.tools.register(
@@ -38,7 +42,9 @@ export class ExampleCapability implements OnModuleInit {
         params: { action: { type: 'string', description: '要执行的动作' } },
         requiresApproval: true,
       },
-      async (params: unknown) => ({ done: `执行了 ${(params as { action?: string }).action ?? 'nothing'}` }),
+      async (params: unknown) => ({
+        done: `执行了 ${(params as { action?: string }).action ?? 'nothing'}`,
+      }),
     )
 
     // 4. 订阅事件（能力包间的解耦协作示例）

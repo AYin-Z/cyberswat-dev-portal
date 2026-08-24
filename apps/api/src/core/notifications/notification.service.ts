@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../db/prisma.service'
 import { EventBus } from '../events/event-bus'
 
@@ -8,8 +8,6 @@ import { EventBus } from '../events/event-bus'
  */
 @Injectable()
 export class NotificationService {
-  private readonly logger = new Logger(NotificationService.name)
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventBus,
@@ -48,8 +46,18 @@ export class NotificationService {
   }
 
   /** 我的通知（未读优先） */
-  async listFor(userId: string): Promise<
-    { id: string; type: string; title: string; content: string | null; link: string | null; read: boolean; createdAt: string }[]
+  async listFor(
+    userId: string,
+  ): Promise<
+    {
+      id: string
+      type: string
+      title: string
+      content: string | null
+      link: string | null
+      read: boolean
+      createdAt: string
+    }[]
   > {
     const rows = await this.prisma.notification.findMany({
       where: { userId },
@@ -75,9 +83,15 @@ export class NotificationService {
   /** 标记已读 */
   async markRead(userId: string, notificationId?: string): Promise<void> {
     if (notificationId) {
-      await this.prisma.notification.updateMany({ where: { id: notificationId, userId }, data: { read: true } })
+      await this.prisma.notification.updateMany({
+        where: { id: notificationId, userId },
+        data: { read: true },
+      })
     } else {
-      await this.prisma.notification.updateMany({ where: { userId, read: false }, data: { read: true } })
+      await this.prisma.notification.updateMany({
+        where: { userId, read: false },
+        data: { read: true },
+      })
     }
   }
 }

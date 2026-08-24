@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { PostBoard } from '@prisma/client'
 import { EventBus } from '../../core/events/event-bus'
 import { PrismaService } from '../../core/db/prisma.service'
@@ -38,7 +38,11 @@ export class CommunityService {
         id: 'post.search',
         description: '搜索社区帖子（按板块/关键词），供 agent 了解成员讨论',
         params: {
-          board: { type: 'string', enum: ['GENERAL', 'HELP', 'SHARE', 'RECRUIT'], description: '板块' },
+          board: {
+            type: 'string',
+            enum: ['GENERAL', 'HELP', 'SHARE', 'RECRUIT'],
+            description: '板块',
+          },
           keyword: { type: 'string', description: '关键词' },
           limit: { type: 'number', description: '条数上限，默认 20' },
         },
@@ -49,13 +53,25 @@ export class CommunityService {
         const rows = await this.prisma.post.findMany({
           where: {
             ...(p.board ? { board: p.board } : {}),
-            ...(p.keyword ? { OR: [{ title: { contains: p.keyword } }, { content: { contains: p.keyword } }] } : {}),
+            ...(p.keyword
+              ? { OR: [{ title: { contains: p.keyword } }, { content: { contains: p.keyword } }] }
+              : {}),
           },
-          include: { author: { select: { nickname: true } }, _count: { select: { comments: true, likes: true } } },
+          include: {
+            author: { select: { nickname: true } },
+            _count: { select: { comments: true, likes: true } },
+          },
           orderBy: { createdAt: 'desc' },
           take: Math.min(p.limit ?? 20, 50),
         })
-        return rows.map((r) => ({ id: r.id, board: r.board, title: r.title, author: r.author.nickname, comments: r._count.comments, likes: r._count.likes }))
+        return rows.map((r) => ({
+          id: r.id,
+          board: r.board,
+          title: r.title,
+          author: r.author.nickname,
+          comments: r._count.comments,
+          likes: r._count.likes,
+        }))
       },
     )
     this.logger.log('[community] 工具注册完成')
@@ -89,7 +105,10 @@ export class CommunityService {
   }
 
   /** 发帖（解析 @提及 → 通知） */
-  async createPost(authorId: string, data: { board: PostBoard; title: string; content: string }): Promise<PostView> {
+  async createPost(
+    authorId: string,
+    data: { board: PostBoard; title: string; content: string },
+  ): Promise<PostView> {
     const post = await this.prisma.post.create({
       data: { board: data.board, title: data.title, content: data.content, authorId },
       include: {
@@ -152,14 +171,21 @@ export class CommunityService {
     }
     await this.handleMentions(content, authorId, postId, comment.id)
     this.events.emit('bot.mention', { content, postId, byUserId: authorId, commentId: comment.id })
-    return { id: comment.id, content: comment.content, author: comment.author, createdAt: comment.createdAt.toISOString() }
+    return {
+      id: comment.id,
+      content: comment.content,
+      author: comment.author,
+      createdAt: comment.createdAt.toISOString(),
+    }
   }
 
   /** 点赞/取消点赞 */
   async toggleLike(postId: string, userId: string): Promise<{ liked: boolean; likeCount: number }> {
     const post = await this.prisma.post.findUnique({ where: { id: postId } })
     if (!post) throw new NotFoundException('帖子不存在')
-    const existing = await this.prisma.postLike.findUnique({ where: { postId_userId: { postId, userId } } })
+    const existing = await this.prisma.postLike.findUnique({
+      where: { postId_userId: { postId, userId } },
+    })
     if (existing) {
       await this.prisma.postLike.delete({ where: { id: existing.id } })
       return { liked: false, likeCount: await this.prisma.postLike.count({ where: { postId } }) }
@@ -180,7 +206,12 @@ export class CommunityService {
   // ============ @提及 ============
 
   /** 解析 @昵称 并通知（在帖子/评论内容中匹配） */
-  private async handleMentions(content: string, byUserId: string, postId: string, commentId?: string): Promise<void> {
+  private async handleMentions(
+    content: string,
+    byUserId: string,
+    postId: string,
+    commentId?: string,
+  ): Promise<void> {
     const regex = /@([\u4e00-\u9fa5\w-]{2,20})/g
     const matches = [...content.matchAll(regex)]
     if (!matches.length) return

@@ -1,11 +1,13 @@
 # cyberswat-dev-portal — CyberSWAT 开发部子站系统
 
 ## 项目身份
+
 CyberSWAT 网络特警队开发部子站（dev.cyberswat.cn），插件化架构（借鉴 DSH/Cordis 设计哲学）。
 双仓库：个人 AYin-Z/cyberswat-dev-portal（主源）+ 组织 PPSUC-CyberSWAT/cyberswat-dev-portal（同步），
 `git push origin main` 双推。仓库级 http.proxy=127.0.0.1:7890。
 
 ## 关键决策（2026-08-12）
+
 - 技术栈：NestJS 11 + Prisma + PostgreSQL 16 + socket.io + JWT + GitHub OAuth；前端 Vue3+Vite+TS+Pinia（与主站同栈）
 - 插件化：内核（core/）+ 能力包（capabilities/）= 插件；五个扩展点：事件总线/工具注册表/UI贡献/权限点/数据模型
 - 部门 agent 路线：agent = 特殊插件（persona + tools 白名单 + 事件订阅 + bot: 身份）；写操作一律审批 + 审计
@@ -13,6 +15,7 @@ CyberSWAT 网络特警队开发部子站（dev.cyberswat.cn），插件化架构
 - 设计文档：docs/plugin-architecture-eval.md（调研与评估）、docs/tech-stack-analysis.md（选型）；整体 PRD 在主仓库 cyberswat-portal/docs/PRD.md
 
 ## 功能状态（2026-08-15 第一版全功能上线）
+
 - ✅ 认证：邀请制注册（令牌哈希/名额/撤销）+ bcrypt + JWT + refresh 轮换 + GitHub OAuth（代码就绪待配置）
 - ✅ 公告：发布/已读追踪/重要确认/部长名单（announcement_ 命名空间）
 - ✅ 点子墙：发布/加入（自动转孵化）/转正（idea_wall_ 命名空间）
@@ -22,12 +25,17 @@ CyberSWAT 网络特警队开发部子站（dev.cyberswat.cn），插件化架构
 - ✅ agent 工具注册表：8 工具（3 需审批），全量审计（core_tool_calls）
 
 ## 环境
+
 - Node v24.11.1 在 ~/.local/bin/node（系统 /usr/bin/node 是 v22，pnpm 会 SQLite 故障）
 - pnpm 11.17.0（corepack），PATH 需含 ~/.local/bin
 - pnpm 11 构建脚本批准：pnpm-workspace.yaml 用 **allowBuilds**（不是 onlyBuiltDependencies，两者都写时 allowBuilds 生效）
 - 本地 PG：cyberswat-dev-db 容器（127.0.0.1:5433）；生产：cyberswat-dev-db-prod（compose 内网）
+- ⚠️ pnpm-workspace.yaml 已设 `verifyDepsBeforeRun: false`：`pnpm deploy --prod --legacy` 会把 workspace 态重置为 production（dev:false），若不关该开关，后续 `pnpm <script>` 会触发 `pnpm install --production` 清空 devDependencies
+- 公共依赖版本集中在 pnpm-workspace.yaml 的 `catalog:`（typescript/vitest/socket.io-client），各包 package.json 用 `catalog:` 引用；跨包 TypeScript 已统一为 ~5.7.2
+- 验证门禁：根 `pnpm check`（lint + typecheck + test + build）全绿；api e2e 需要 127.0.0.1:5433 的 cyberswat_test 库（由 apps/api/vitest.config.ts 的 test.env 注入）
 
 ## 开发命令
+
 - pnpm dev:api → 内核 127.0.0.1:8093/api（main.ts 绑 0.0.0.0，API_HOST 可覆盖）
 - pnpm dev:web → 前端 127.0.0.1:5175（proxy /api + /socket.io → 8093）
 - 能力包模板：apps/api/src/capabilities/example/ + apps/web/src/capabilities/example/
@@ -35,11 +43,13 @@ CyberSWAT 网络特警队开发部子站（dev.cyberswat.cn），插件化架构
 - shared 契约改动：`pnpm --filter @cyberswat/shared build`（api 编译走 dist；web 走源码 alias）
 
 ## 生产部署（已上线 2026-08-15）
+
 ```
 dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cyberswat-dev-web(nginx:alpine)
   ├ 反代 /api + /socket.io → dev-api:8093（容器别名 dev-api）
   └ dev-api(node:24-slim) + dev-db-prod(postgres:16-alpine, 内网)
 ```
+
 - 构建模式：宿主 pnpm build → `pnpm --filter @cyberswat/dev-api deploy --prod --legacy deploy/api` → 镜像 COPY
   （容器内不做 npm，规避 fake-ip 坑；deploy/api 不入库，见 .gitignore）
 - **prisma 在 api 的 dependencies**（非 devDependencies）——deploy 产物才自带 CLI 跑 migrate
@@ -51,6 +61,7 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
 - 生产测试账号：leader@cyberswat.cn / member@cyberswat.cn（密码 password123）
 
 ## 已知坑（本仓库特有）
+
 - **alpine 镜像 Prisma 引擎缺失**：宿主生成的是 glibc 引擎，alpine(musl) 报 "could not locate Query Engine" → 用 node:24-slim
 - **slim 需装 openssl**：Dockerfile.api 有 `apt-get install openssl`（Prisma 检测 libssl 版本）
 - **API 容器绑定**：main.ts 绑 0.0.0.0（nginx 从 docker 网络反代；公网不暴露该端口）
@@ -61,6 +72,7 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
 - **测试注意**：register 需要邀请令牌；无令牌/已用/过期/撤销全拦截
 
 ## 里程碑
+
 - [x] M0: 仓库 + monorepo 骨架 + 内核（插件注册表/权限点/事件总线/工具注册表/认证占位）
 - [x] M1a: Prisma 落库（PostgreSQL 16 容器 5433）+ bcrypt 认证 + GitHub OAuth（代码就绪，client id/secret 待填）
 - [x] M1b: 公告能力包（发布/已读追踪/重要确认/部长名单/agent 工具带审批）
@@ -73,6 +85,7 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
 - [x] 全功能端到端线上验证（2026-08-15）
 
 ## 待办（下一轮迭代）
+
 - **最终设计定稿**：docs/DESIGN.md（19 项裁决总表）+ docs/FRONTEND.md（前端设计：Naive UI/侧边栏工作台/token/仪表盘）
 - 迭代计划：docs/ITERATION-R1.md（人力匹配优先）+ docs/ITERATION-R2.md（agent 体系）；体系愿景见主仓库 docs/VISION.md（v1.4）
 - **AI 友好决策（2026-08-15 三轮拍板）**：系统是一等 MCP Server——OAuth 2.1 + PKCE + RFC 7591 DCR；
@@ -90,7 +103,7 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
 - 生产凭证: JWT_SECRET/DB 密码已轮换为强随机（~/.cyberswat-dev-prod.env 600）；备份 cron 每日 03:00（~backups/cyberswat 30天滚动）
 - 测试: `cd apps/api && DATABASE_URL=...cyberswat_test pnpm test`（vitest+swc 装饰器元数据）
 - [x] GitHub OAuth 配置（2026-08-15）：OAuth App 已创建（CyberSWAT 开发部子站，回调 https://dev.cyberswat.cn/api/auth/github/callback），
-  凭据存 ~/.cyberswat-dev-prod.env（权限 600，不入库），容器 --env-file 注入
+      凭据存 ~/.cyberswat-dev-prod.env（权限 600，不入库），容器 --env-file 注入
   - 授权链路已验证：/api/auth/github/login → 302 github.com 授权页（client_id 正确），本地+线上均通
   - ✅ 浏览器全流程点验通过（2026-08-15）：GitHub 登录 → 自动建号（AYin-Z → Ayin, MEMBER, githubId 绑定落库）
 - [ ] 个人资料编辑页（年级/技能/签名/links 维护）—— 数据模型已就绪（core_users）

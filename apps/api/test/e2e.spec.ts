@@ -12,9 +12,7 @@ import { PrismaService } from '../src/core/db/prisma.service'
 // 🟡-14：强制测试库隔离——DATABASE_URL 必须指向 cyberswat_test，否则拒绝运行
 const dbUrl = process.env.DATABASE_URL ?? ''
 if (!dbUrl.includes('cyberswat_test')) {
-  throw new Error(
-    'e2e 测试必须使用隔离测试库！请设置 DATABASE_URL=postgresql://.../cyberswat_test',
-  )
+  throw new Error('e2e 测试必须使用隔离测试库！请设置 DATABASE_URL=postgresql://.../cyberswat_test')
 }
 
 describe('CyberSWAT dev portal e2e', () => {
@@ -25,7 +23,9 @@ describe('CyberSWAT dev portal e2e', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile()
     app = moduleRef.createNestApplication()
     app.setGlobalPrefix('api')
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }))
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+    )
     await app.init()
     prisma = app.get(PrismaService)
     // 清库（保持幂等）
@@ -93,7 +93,9 @@ describe('CyberSWAT dev portal e2e', () => {
       password: 'password123',
     })
     expect(login.status).toBe(201)
-    const me = await api().get('/api/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`)
+    const me = await api()
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
     expect(me.status).toBe(200)
     expect(me.body.nickname).toBe('测试成员')
   })
@@ -105,10 +107,13 @@ describe('CyberSWAT dev portal e2e', () => {
       email: 'member@test.cn',
       password: 'password123',
     })
-    const res = await api().post('/api/announcements').set('Authorization', `Bearer ${login.body.accessToken}`).send({
-      title: '越权公告',
-      content: 'x',
-    })
+    const res = await api()
+      .post('/api/announcements')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+      .send({
+        title: '越权公告',
+        content: 'x',
+      })
     expect(res.status).toBe(403)
   })
 
@@ -128,8 +133,15 @@ describe('CyberSWAT dev portal e2e', () => {
       .send({ params: { title: 'agent 公告', content: '审批测试' } })
     // HTTP 人工调用 skipApproval=true → 直接成功（工具管道验证）
     expect(res.status).toBe(201)
-    const audit = await api().get('/api/tools/audit').set('Authorization', `Bearer ${login.body.accessToken}`)
-    expect(audit.body.some((r: any) => r.toolId === 'announcement.publish' && r.status === 'ok')).toBe(true)
+    const audit = await api()
+      .get('/api/tools/audit')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
+    expect(
+      audit.body.some(
+        (r: { toolId: string; status: string }) =>
+          r.toolId === 'announcement.publish' && r.status === 'ok',
+      ),
+    ).toBe(true)
   })
 
   // ============ 项目级权限（P6） ============
@@ -154,14 +166,19 @@ describe('CyberSWAT dev portal e2e', () => {
       nickname: '普通成员',
       inviteToken: token,
     })
-    const peon = await prisma.coreUser.findUnique({ where: { email: 'peon@test.cn' } })
     const project = await prisma.project.create({
       data: { name: 'e2e 项目', description: '测试', leadId: leader!.id },
     })
-    await prisma.projectMember.create({ data: { projectId: project.id, userId: leader!.id, role: 'LEAD' } })
+    await prisma.projectMember.create({
+      data: { projectId: project.id, userId: leader!.id, role: 'LEAD' },
+    })
 
-    const leaderLogin = await api().post('/api/auth/login').send({ email: 'member@test.cn', password: 'password123' })
-    const peonLogin = await api().post('/api/auth/login').send({ email: 'peon@test.cn', password: 'password123' })
+    const leaderLogin = await api()
+      .post('/api/auth/login')
+      .send({ email: 'member@test.cn', password: 'password123' })
+    const peonLogin = await api()
+      .post('/api/auth/login')
+      .send({ email: 'peon@test.cn', password: 'password123' })
 
     const denied = await api()
       .post('/api/tasks')
@@ -185,22 +202,42 @@ describe('CyberSWAT dev portal e2e', () => {
       where: { id: u!.id },
       data: { skills: ['Vue'], allowMatch: true },
     })
-    const leaderLogin = await api().post('/api/auth/login').send({ email: 'member@test.cn', password: 'password123' })
+    const leaderLogin = await api()
+      .post('/api/auth/login')
+      .send({ email: 'member@test.cn', password: 'password123' })
     await api()
       .post('/api/ideas')
       .set('Authorization', `Bearer ${leaderLogin.body.accessToken}`)
-      .send({ title: 'Vue 匹配测试点子', description: '需要 Vue 技能的人', need: '缺 Vue', techStack: ['Vue'] })
+      .send({
+        title: 'Vue 匹配测试点子',
+        description: '需要 Vue 技能的人',
+        need: '缺 Vue',
+        techStack: ['Vue'],
+      })
     await new Promise((r) => setTimeout(r, 300))
-    const peonLogin = await api().post('/api/auth/login').send({ email: 'peon@test.cn', password: 'password123' })
-    const notifs = await api().get('/api/notifications').set('Authorization', `Bearer ${peonLogin.body.accessToken}`)
-    expect(notifs.body.some((n: any) => n.type === 'idea-match' && n.title.includes('Vue 匹配测试点子'))).toBe(true)
+    const peonLogin = await api()
+      .post('/api/auth/login')
+      .send({ email: 'peon@test.cn', password: 'password123' })
+    const notifs = await api()
+      .get('/api/notifications')
+      .set('Authorization', `Bearer ${peonLogin.body.accessToken}`)
+    expect(
+      notifs.body.some(
+        (n: { type: string; title: string }) =>
+          n.type === 'idea-match' && n.title.includes('Vue 匹配测试点子'),
+      ),
+    ).toBe(true)
   })
 
   // ============ 内容治理（P5） ============
 
   it('举报 → 队列 → 部长处置 RESOLVED → 软删除', async () => {
-    const leaderLogin = await api().post('/api/auth/login').send({ email: 'member@test.cn', password: 'password123' })
-    const peonLogin = await api().post('/api/auth/login').send({ email: 'peon@test.cn', password: 'password123' })
+    const leaderLogin = await api()
+      .post('/api/auth/login')
+      .send({ email: 'member@test.cn', password: 'password123' })
+    const peonLogin = await api()
+      .post('/api/auth/login')
+      .send({ email: 'peon@test.cn', password: 'password123' })
     const post = await api()
       .post('/api/posts')
       .set('Authorization', `Bearer ${peonLogin.body.accessToken}`)
@@ -210,22 +247,30 @@ describe('CyberSWAT dev portal e2e', () => {
       .post(`/api/moderation/report/post/${postId}`)
       .set('Authorization', `Bearer ${leaderLogin.body.accessToken}`)
       .send({ reason: '广告' })
-    const reports = await api().get('/api/moderation/reports').set('Authorization', `Bearer ${leaderLogin.body.accessToken}`)
+    const reports = await api()
+      .get('/api/moderation/reports')
+      .set('Authorization', `Bearer ${leaderLogin.body.accessToken}`)
     expect(reports.body.length).toBeGreaterThan(0)
     const reportId = reports.body[0].id
     await api()
       .post(`/api/moderation/reports/${reportId}?action=RESOLVED`)
       .set('Authorization', `Bearer ${leaderLogin.body.accessToken}`)
     // 🟡-21 软删除语义：原文保留但不可见（404）
-    const after = await api().get(`/api/posts/${postId}`).set('Authorization', `Bearer ${peonLogin.body.accessToken}`)
+    const after = await api()
+      .get(`/api/posts/${postId}`)
+      .set('Authorization', `Bearer ${peonLogin.body.accessToken}`)
     expect(after.status).toBe(404)
   })
 
   // ============ 资料与词表（P1） ============
 
   it('词表 API 返回分类 → 技术；PATCH /api/me 更新技能', async () => {
-    const peonLogin = await api().post('/api/auth/login').send({ email: 'peon@test.cn', password: 'password123' })
-    const skills = await api().get('/api/skills').set('Authorization', `Bearer ${peonLogin.body.accessToken}`)
+    const peonLogin = await api()
+      .post('/api/auth/login')
+      .send({ email: 'peon@test.cn', password: 'password123' })
+    const skills = await api()
+      .get('/api/skills')
+      .set('Authorization', `Bearer ${peonLogin.body.accessToken}`)
     expect(skills.body.length).toBeGreaterThan(5)
     expect(skills.body[0].skills.length).toBeGreaterThan(0)
     const patch = await api()
@@ -249,7 +294,9 @@ describe('review 回归', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile()
     app = moduleRef.createNestApplication()
     app.setGlobalPrefix('api')
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }))
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+    )
     await app.init()
     prisma = app.get(PrismaService)
   })
@@ -258,7 +305,9 @@ describe('review 回归', () => {
   const api = () => request(app.getHttpServer())
 
   it('🔴-3 审计落库：工具调用写入 core_tool_calls', async () => {
-    const login = await api().post('/api/auth/login').send({ email: 'member@test.cn', password: 'password123' })
+    const login = await api()
+      .post('/api/auth/login')
+      .send({ email: 'member@test.cn', password: 'password123' })
     const res = await api()
       .post('/api/tools/idea.search/call')
       .set('Authorization', `Bearer ${login.body.accessToken}`)
@@ -269,8 +318,12 @@ describe('review 回归', () => {
   })
 
   it('🔴-3b 审计接口仅部长可见：member 访问 /tools/audit → 403', async () => {
-    const login = await api().post('/api/auth/login').send({ email: 'peon@test.cn', password: 'password123' })
-    const res = await api().get('/api/tools/audit').set('Authorization', `Bearer ${login.body.accessToken}`)
+    const login = await api()
+      .post('/api/auth/login')
+      .send({ email: 'peon@test.cn', password: 'password123' })
+    const res = await api()
+      .get('/api/tools/audit')
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
     expect(res.status).toBe(403)
   })
 
@@ -288,7 +341,9 @@ describe('review 回归', () => {
       data: { title: '指派任务', creatorId: leader!.id, assigneeId: peon!.id },
     })
     // 第三方（leader 自己）不能认领 peon 的任务
-    const leaderLogin = await api().post('/api/auth/login').send({ email: 'member@test.cn', password: 'password123' })
+    const leaderLogin = await api()
+      .post('/api/auth/login')
+      .send({ email: 'member@test.cn', password: 'password123' })
     const res = await api()
       .post(`/api/tasks/${task.id}/claim`)
       .set('Authorization', `Bearer ${leaderLogin.body.accessToken}`)
@@ -309,11 +364,19 @@ describe('review 回归', () => {
   })
 
   it('🟢-13 公告 GET 不再自动标记已读', async () => {
-    const login = await api().post('/api/auth/login').send({ email: 'peon@test.cn', password: 'password123' })
+    const login = await api()
+      .post('/api/auth/login')
+      .send({ email: 'peon@test.cn', password: 'password123' })
     const ann = await prisma.announcement.create({
-      data: { title: 'GET 无副作用', content: 'test', authorId: (await prisma.coreUser.findUnique({ where: { email: 'member@test.cn' } }))!.id },
+      data: {
+        title: 'GET 无副作用',
+        content: 'test',
+        authorId: (await prisma.coreUser.findUnique({ where: { email: 'member@test.cn' } }))!.id,
+      },
     })
-    await api().get(`/api/announcements/${ann.id}`).set('Authorization', `Bearer ${login.body.accessToken}`)
+    await api()
+      .get(`/api/announcements/${ann.id}`)
+      .set('Authorization', `Bearer ${login.body.accessToken}`)
     const read = await prisma.announcementRead.count({ where: { announcementId: ann.id } })
     expect(read).toBe(0)
     await prisma.announcement.delete({ where: { id: ann.id } })

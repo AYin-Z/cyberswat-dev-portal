@@ -1,19 +1,28 @@
 import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import type { Response } from 'express'
-import { createHash, randomBytes } from 'node:crypto'
 import { PrismaService } from '../db/prisma.service'
 import { requireJwtSecret } from '../config'
 import { PermissionsService } from '../permissions/permissions.service'
 import { OAuthClientsStore, genCode, genToken, oauthHash } from './oauth-clients.store'
-import type { OAuthServerProvider as OAuthProviderIface, AuthorizationParams } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/auth/provider.js'
-import type { OAuthClientInformationFull, OAuthTokens } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/shared/auth.js'
+import type {
+  OAuthServerProvider as OAuthProviderIface,
+  AuthorizationParams,
+} from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/auth/provider.js'
+import type {
+  OAuthClientInformationFull,
+  OAuthTokens,
+} from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/shared/auth.js'
 import type { AuthInfo } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/auth/types.js'
 
 const CODE_TTL = 10 * 60 * 1000 // 授权码 10 分钟
 // JWT_SECRET 统一走 requireJwtSecret()
 
 /** access token = JWT（携带 sub=userId, scopes, clientId），verify 用 jose 验签 */
-async function signAccessToken(userId: string, scopes: string[], clientId: string): Promise<string> {
+async function signAccessToken(
+  userId: string,
+  scopes: string[],
+  clientId: string,
+): Promise<string> {
   const { SignJWT } = await import('jose')
   return new SignJWT({ scopes, clientId, aud: 'mcp' })
     .setProtectedHeader({ alg: 'HS256' })
@@ -45,7 +54,11 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
   }
 
   /** authorize：成员已登录（cookie session）→ 自动批准签发 code → redirect */
-  async authorize(client: OAuthClientInformationFull, params: AuthorizationParams, res: Response): Promise<void> {
+  async authorize(
+    client: OAuthClientInformationFull,
+    params: AuthorizationParams,
+    res: Response,
+  ): Promise<void> {
     const redirectUri = params.redirectUri
     const fail = (error: string, desc?: string) => {
       const u = new URL(redirectUri)
@@ -56,10 +69,11 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
     }
 
     // 从 cookie 读取会话（登录时种 cs_session）
-    const sessionToken = (res.req as any).cookies?.cs_session as string | undefined
+    const sessionToken = (res.req as { cookies?: Record<string, string> }).cookies?.cs_session as
+      string | undefined
     if (!sessionToken) {
       // 未登录 → 跳登录页，next 回 authorize
-      const authorizeUrl = (res.req as any).originalUrl
+      const authorizeUrl = (res.req as { originalUrl: string }).originalUrl
       res.redirect(`/login?next=${encodeURIComponent(authorizeUrl)}`)
       return
     }
@@ -91,10 +105,15 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
     u.searchParams.set('code', code)
     if (params.state) u.searchParams.set('state', params.state)
     res.redirect(u.toString())
-    this.logger.log(`[oauth] ${user.id.slice(0, 8)} 授权 ${client.client_id} scopes=${(params.scopes ?? []).join(',')}`)
+    this.logger.log(
+      `[oauth] ${user.id.slice(0, 8)} 授权 ${client.client_id} scopes=${(params.scopes ?? []).join(',')}`,
+    )
   }
 
-  async challengeForAuthorizationCode(client: OAuthClientInformationFull, authorizationCode: string): Promise<string> {
+  async challengeForAuthorizationCode(
+    _client: OAuthClientInformationFull,
+    authorizationCode: string,
+  ): Promise<string> {
     const c = await this.prisma.coreOauthCode.findUnique({ where: { code: authorizationCode } })
     if (!c) throw new BadRequestException('code 不存在')
     return c.codeChallenge
@@ -104,36 +123,38 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
   async exchangeAuthorizationCode(
     client: OAuthClientInformationFull,
     authorizationCode: string,
-    codeVerifier?: string,
+    _codeVerifier?: string,
     redirectUri?: string,
   ): Promise<OAuthTokens> {
     try {
-    const c = await this.prisma.coreOauthCode.findUnique({ where: { code: authorizationCode } })
-    if (!c || c.used || c.expiresAt < new Date()) throw new BadRequestException('授权码无效或已过期')
-    if (c.clientId !== client.client_id) throw new BadRequestException('client 不匹配')
-    if (redirectUri && c.redirectUri !== redirectUri) throw new BadRequestException('redirect_uri 不匹配')
-    // 注意：PKCE 校验由 SDK 本地完成（challengeForAuthorizationCode → verifyChallenge）
+      const c = await this.prisma.coreOauthCode.findUnique({ where: { code: authorizationCode } })
+      if (!c || c.used || c.expiresAt < new Date())
+        throw new BadRequestException('授权码无效或已过期')
+      if (c.clientId !== client.client_id) throw new BadRequestException('client 不匹配')
+      if (redirectUri && c.redirectUri !== redirectUri)
+        throw new BadRequestException('redirect_uri 不匹配')
+      // 注意：PKCE 校验由 SDK 本地完成（challengeForAuthorizationCode → verifyChallenge）
 
-    await this.prisma.coreOauthCode.update({ where: { id: c.id }, data: { used: true } })
+      await this.prisma.coreOauthCode.update({ where: { id: c.id }, data: { used: true } })
 
-    const accessToken = await signAccessToken(c.userId, c.scopes, client.client_id)
-    const refreshToken = genToken()
-    await this.prisma.coreOauthToken.create({
-      data: {
-        clientId: client.client_id,
-        userId: c.userId,
-        scope: c.scopes,
-        tokenHash: oauthHash(refreshToken),
-        expiresAt: new Date(Date.now() + REFRESH_TTL),
-      },
-    })
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      token_type: 'Bearer',
-      expires_in: Math.floor(ACCESS_TTL / 1000),
-      scope: c.scopes.join(' '),
-    }
+      const accessToken = await signAccessToken(c.userId, c.scopes, client.client_id)
+      const refreshToken = genToken()
+      await this.prisma.coreOauthToken.create({
+        data: {
+          clientId: client.client_id,
+          userId: c.userId,
+          scope: c.scopes,
+          tokenHash: oauthHash(refreshToken),
+          expiresAt: new Date(Date.now() + REFRESH_TTL),
+        },
+      })
+      return {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        token_type: 'Bearer',
+        expires_in: Math.floor(ACCESS_TTL / 1000),
+        scope: c.scopes.join(' '),
+      }
     } catch (err) {
       this.logger.error(`[oauth] exchange 失败: ${err instanceof Error ? err.stack : err}`)
       throw err
@@ -141,13 +162,22 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
   }
 
   /** refresh → 新 access（轮换） */
-  async exchangeRefreshToken(client: OAuthClientInformationFull, refreshToken: string, scopes?: string[]): Promise<OAuthTokens> {
-    const row = await this.prisma.coreOauthToken.findUnique({ where: { tokenHash: oauthHash(refreshToken) } })
+  async exchangeRefreshToken(
+    client: OAuthClientInformationFull,
+    refreshToken: string,
+    scopes?: string[],
+  ): Promise<OAuthTokens> {
+    const row = await this.prisma.coreOauthToken.findUnique({
+      where: { tokenHash: oauthHash(refreshToken) },
+    })
     if (!row || row.revoked) throw new UnauthorizedException('refresh token 无效')
     if (row.expiresAt < new Date()) throw new UnauthorizedException('refresh token 已过期')
     if (row.clientId !== client.client_id) throw new UnauthorizedException('client 不匹配')
     // 🔴-6b：refresh 前校验用户仍激活
-    const owner = await this.prisma.coreUser.findUnique({ where: { id: row.userId }, select: { active: true } })
+    const owner = await this.prisma.coreUser.findUnique({
+      where: { id: row.userId },
+      select: { active: true },
+    })
     if (!owner?.active) throw new UnauthorizedException('账号已停用')
 
     // 🔴-5c：refresh 请求的 scope 必须 ⊆ 原 scope（防自提权）
@@ -186,12 +216,15 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
       const { jwtVerify } = await import('jose')
       const secret = new TextEncoder().encode(requireJwtSecret())
       const { payload } = await jwtVerify(token, secret)
-      this.logger.log(`[oauth] verify token: scopes=${JSON.stringify(payload.scopes)} sub=${payload.sub}`)
+      this.logger.log(
+        `[oauth] verify token: scopes=${JSON.stringify(payload.scopes)} sub=${payload.sub}`,
+      )
       return {
         token,
         scopes: (payload.scopes as string[]) ?? [],
         clientId: (payload.clientId as string) ?? '',
-        expiresAt: typeof payload.exp === 'number' ? payload.exp : Math.floor(Date.now() / 1000) + 3600,
+        expiresAt:
+          typeof payload.exp === 'number' ? payload.exp : Math.floor(Date.now() / 1000) + 3600,
         extra: { userId: payload.sub as string },
       } as AuthInfo
     } catch {
@@ -201,7 +234,10 @@ export class CyberswatOAuthProvider implements OAuthProviderIface {
 
   /** 🔴-5b：owner 角色实际拥有的 scope（权限点） */
   private async allowedScopesFor(userId: string, requested: string[]): Promise<string[]> {
-    const user = await this.prisma.coreUser.findUnique({ where: { id: userId }, select: { role: true } })
+    const user = await this.prisma.coreUser.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    })
     if (!user) return []
     // 角色 → 权限点：直接按角色的可见工具权限点聚合（简化：允许所有其角色可见工具的 requiredPermission + 已注册权限点）
     const permRows = await this.prisma.coreRolePermission.findMany({ where: { role: user.role } })

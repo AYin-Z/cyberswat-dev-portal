@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { ProjectStatus, TaskPriority, TaskStatus } from '@prisma/client'
 import { EventBus } from '../../core/events/event-bus'
 import { PrismaService } from '../../core/db/prisma.service'
@@ -57,21 +63,39 @@ export class ProjectService {
         id: 'task.list',
         description: '列出任务（按状态/指派人），供 agent 了解任务流转情况',
         params: {
-          status: { type: 'string', enum: ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'], description: '按状态筛选' },
+          status: {
+            type: 'string',
+            enum: ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'],
+            description: '按状态筛选',
+          },
           assigneeId: { type: 'string', description: '按指派人筛选' },
           limit: { type: 'number', description: '条数上限，默认 20' },
         },
         requiredPermission: 'task.view',
       },
-      async (params: unknown, ctx: ToolCallContext) => {
+      async (params: unknown, _ctx: ToolCallContext) => {
         const p = params as { status?: TaskStatus; assigneeId?: string; limit?: number }
         const rows = await this.prisma.task.findMany({
-          where: { ...(p.status ? { status: p.status } : {}), ...(p.assigneeId ? { assigneeId: p.assigneeId } : {}) },
-          include: { assignee: { select: { id: true, nickname: true } }, project: { select: { name: true } } },
+          where: {
+            ...(p.status ? { status: p.status } : {}),
+            ...(p.assigneeId ? { assigneeId: p.assigneeId } : {}),
+          },
+          include: {
+            assignee: { select: { id: true, nickname: true } },
+            project: { select: { name: true } },
+          },
           orderBy: { createdAt: 'desc' },
           take: Math.min(p.limit ?? 20, 50),
         })
-        return rows.map((r) => ({ id: r.id, title: r.title, status: r.status, priority: r.priority, dueAt: r.dueAt?.toISOString() ?? null, assignee: r.assignee?.nickname ?? null, project: r.project?.name ?? null }))
+        return rows.map((r) => ({
+          id: r.id,
+          title: r.title,
+          status: r.status,
+          priority: r.priority,
+          dueAt: r.dueAt?.toISOString() ?? null,
+          assignee: r.assignee?.nickname ?? null,
+          project: r.project?.name ?? null,
+        }))
       },
     )
     this.tools.register(
@@ -82,7 +106,11 @@ export class ProjectService {
           title: { type: 'string', description: '任务标题' },
           description: { type: 'string', description: '任务描述' },
           assigneeId: { type: 'string', description: '被指派人用户 id' },
-          priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'], description: '优先级' },
+          priority: {
+            type: 'string',
+            enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
+            description: '优先级',
+          },
           dueAt: { type: 'string', description: '截止时间 ISO' },
           projectId: { type: 'string', description: '挂靠项目 id（可选）' },
         },
@@ -90,7 +118,14 @@ export class ProjectService {
         requiresApproval: true,
       },
       async (params: unknown, ctx: ToolCallContext) => {
-        const p = params as { title: string; description?: string; assigneeId?: string; priority?: TaskPriority; dueAt?: string; projectId?: string }
+        const p = params as {
+          title: string
+          description?: string
+          assigneeId?: string
+          priority?: TaskPriority
+          dueAt?: string
+          projectId?: string
+        }
         const task = await this.create(ctx.caller, {
           title: p.title,
           description: p.description,
@@ -108,7 +143,11 @@ export class ProjectService {
   // ============ 项目 ============
 
   /** 点子转正 → 创建项目（部长操作，M3 孵化机制核心） */
-  async promoteIdea(ideaId: string, leadId: string, data: { name?: string; difficulty?: string; repoUrl?: string }): Promise<ProjectView> {
+  async promoteIdea(
+    ideaId: string,
+    leadId: string,
+    data: { name?: string; difficulty?: string; repoUrl?: string },
+  ): Promise<ProjectView> {
     const idea = await this.prisma.idea.findUnique({ where: { id: ideaId } })
     if (!idea) throw new NotFoundException('点子不存在')
     if (idea.status === 'PROMOTED') throw new BadRequestException('点子已转正')
@@ -137,7 +176,9 @@ export class ProjectService {
     })
     // 点子加入者自动成为项目成员；负责人入成员表（LEAD）
     const joiners = await this.prisma.ideaJoiner.findMany({ where: { ideaId } })
-    await this.prisma.projectMember.create({ data: { projectId: project.id, userId: leadId, role: 'LEAD' } })
+    await this.prisma.projectMember.create({
+      data: { projectId: project.id, userId: leadId, role: 'LEAD' },
+    })
     if (joiners.length) {
       await this.prisma.projectMember.createMany({
         data: joiners.map((j) => ({ projectId: project.id, userId: j.userId })),
@@ -146,7 +187,9 @@ export class ProjectService {
     }
     // 点子发起人成为项目成员（若非负责人）
     if (idea.authorId !== leadId) {
-      await this.prisma.projectMember.create({ data: { projectId: project.id, userId: idea.authorId } })
+      await this.prisma.projectMember.create({
+        data: { projectId: project.id, userId: idea.authorId },
+      })
     }
     this.events.emit('idea.promoted', { ideaId, projectId: project.id })
     this.logger.log(`[project] 点子 ${ideaId} 转正 → 项目 "${project.name}" (负责人 ${leadId})`)
@@ -171,13 +214,25 @@ export class ProjectService {
       include: {
         lead: { select: { id: true, nickname: true } },
         members: { include: { user: { select: { id: true, nickname: true, skills: true } } } },
-        tasks: { include: { assignee: { select: { id: true, nickname: true } }, creator: { select: { id: true, nickname: true } }, project: { select: { name: true } } }, orderBy: { createdAt: 'desc' } },
+        tasks: {
+          include: {
+            assignee: { select: { id: true, nickname: true } },
+            creator: { select: { id: true, nickname: true } },
+            project: { select: { name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
     if (!row) throw new NotFoundException('项目不存在')
     return {
       ...this.toProjectView(row),
-      members: row.members.map((m) => ({ id: m.user.id, nickname: m.user.nickname, skills: m.user.skills, role: m.role })),
+      members: row.members.map((m) => ({
+        id: m.user.id,
+        nickname: m.user.nickname,
+        skills: m.user.skills,
+        role: m.role,
+      })),
       tasks: row.tasks.map((t) => this.toTaskView(t)),
     }
   }
@@ -192,7 +247,11 @@ export class ProjectService {
   }
 
   /** 项目管理权：全局 dept-leader/admin 或 项目 LEAD（P6 双条件校验） */
-  async assertCanManageProject(userId: string, role: string, projectId: string | null): Promise<void> {
+  async assertCanManageProject(
+    userId: string,
+    role: string,
+    projectId: string | null,
+  ): Promise<void> {
     if (role === 'admin' || role === 'dept-leader') return
     if (projectId && (await this.isProjectLead(projectId, userId))) return
     throw new ForbiddenException('需要部长权限或项目负责人权限')
@@ -234,7 +293,9 @@ export class ProjectService {
         project: { select: { name: true } },
       },
     })
-    this.logger.log(`[task] "${task.title}" 创建 by ${creatorId} (assignee=${data.assigneeId ?? '无'})`)
+    this.logger.log(
+      `[task] "${task.title}" 创建 by ${creatorId} (assignee=${data.assigneeId ?? '无'})`,
+    )
     if (data.assigneeId) {
       this.events.emit('task.status.changed', { taskId: task.id, from: 'CREATED', to: task.status })
     }
@@ -243,7 +304,10 @@ export class ProjectService {
 
   /** 接单（🟡-22：已被指派的 TODO 仅指派人可认领；原子更新防并发双认领） */
   async claim(taskId: string, userId: string): Promise<TaskView> {
-    const task = await this.prisma.task.findUnique({ where: { id: taskId }, include: { assignee: true } })
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { assignee: true },
+    })
     if (!task) throw new NotFoundException('任务不存在')
     if (task.status !== 'TODO') throw new BadRequestException('仅待接单任务可认领')
     if (task.assigneeId && task.assigneeId !== userId) {
@@ -257,7 +321,11 @@ export class ProjectService {
     if (claimed.count === 0) throw new BadRequestException('任务已被他人认领')
     const updated = await this.prisma.task.findUniqueOrThrow({
       where: { id: taskId },
-      include: { assignee: { select: { id: true, nickname: true } }, creator: { select: { id: true, nickname: true } }, project: { select: { name: true } } },
+      include: {
+        assignee: { select: { id: true, nickname: true } },
+        creator: { select: { id: true, nickname: true } },
+        project: { select: { name: true } },
+      },
     })
     this.events.emit('task.status.changed', { taskId, from: 'TODO', to: 'IN_PROGRESS' })
     return this.toTaskView(updated)
@@ -265,47 +333,81 @@ export class ProjectService {
 
   /** 提交（完成工作，进入待验收） */
   async submit(taskId: string, userId: string, note?: string): Promise<TaskView> {
-    const task = await this.prisma.task.findUnique({ where: { id: taskId }, include: { assignee: true } })
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { assignee: true },
+    })
     if (!task) throw new NotFoundException('任务不存在')
     if (task.status !== 'IN_PROGRESS') throw new BadRequestException('仅进行中的任务可提交')
-    if (task.assigneeId && task.assigneeId !== userId) throw new BadRequestException('仅被指派人可提交')
+    if (task.assigneeId && task.assigneeId !== userId)
+      throw new BadRequestException('仅被指派人可提交')
     const updated = await this.prisma.task.update({
       where: { id: taskId },
       data: { status: 'REVIEW', submitNote: note },
-      include: { assignee: { select: { id: true, nickname: true } }, creator: { select: { id: true, nickname: true } }, project: { select: { name: true } } },
+      include: {
+        assignee: { select: { id: true, nickname: true } },
+        creator: { select: { id: true, nickname: true } },
+        project: { select: { name: true } },
+      },
     })
     this.events.emit('task.status.changed', { taskId, from: 'IN_PROGRESS', to: 'REVIEW' })
     return this.toTaskView(updated)
   }
 
   /** 验收（创建者/项目 LEAD/部长）：通过 → DONE；驳回 → 回到 IN_PROGRESS */
-  async review(taskId: string, userId: string, approve: boolean, actorRole?: string): Promise<TaskView> {
+  async review(
+    taskId: string,
+    userId: string,
+    approve: boolean,
+    actorRole?: string,
+  ): Promise<TaskView> {
     const task = await this.prisma.task.findUnique({ where: { id: taskId } })
     if (!task) throw new NotFoundException('任务不存在')
     if (task.status !== 'REVIEW') throw new BadRequestException('仅待验收任务可评审')
     const isLead = task.projectId ? await this.isProjectLead(task.projectId, userId) : false
-    if (task.creatorId !== userId && !isLead && actorRole !== 'admin' && actorRole !== 'dept-leader') {
+    if (
+      task.creatorId !== userId &&
+      !isLead &&
+      actorRole !== 'admin' &&
+      actorRole !== 'dept-leader'
+    ) {
       throw new BadRequestException('仅任务创建者/项目负责人可验收')
     }
     const updated = await this.prisma.task.update({
       where: { id: taskId },
       data: { status: approve ? 'DONE' : 'IN_PROGRESS' },
-      include: { assignee: { select: { id: true, nickname: true } }, creator: { select: { id: true, nickname: true } }, project: { select: { name: true } } },
+      include: {
+        assignee: { select: { id: true, nickname: true } },
+        creator: { select: { id: true, nickname: true } },
+        project: { select: { name: true } },
+      },
     })
-    this.events.emit('task.status.changed', { taskId, from: 'REVIEW', to: approve ? 'DONE' : 'IN_PROGRESS' })
+    this.events.emit('task.status.changed', {
+      taskId,
+      from: 'REVIEW',
+      to: approve ? 'DONE' : 'IN_PROGRESS',
+    })
     this.logger.log(`[task] ${taskId} 验收${approve ? '通过' : '驳回'} by ${userId}`)
     return this.toTaskView(updated)
   }
 
   /** 任务列表（按状态/指派人/项目筛选） */
-  async listTasks(opts?: { status?: TaskStatus; assigneeId?: string; projectId?: string }): Promise<TaskView[]> {
+  async listTasks(opts?: {
+    status?: TaskStatus
+    assigneeId?: string
+    projectId?: string
+  }): Promise<TaskView[]> {
     const rows = await this.prisma.task.findMany({
       where: {
         ...(opts?.status ? { status: opts.status } : {}),
         ...(opts?.assigneeId ? { assigneeId: opts.assigneeId } : {}),
         ...(opts?.projectId ? { projectId: opts.projectId } : {}),
       },
-      include: { assignee: { select: { id: true, nickname: true } }, creator: { select: { id: true, nickname: true } }, project: { select: { name: true } } },
+      include: {
+        assignee: { select: { id: true, nickname: true } },
+        creator: { select: { id: true, nickname: true } },
+        project: { select: { name: true } },
+      },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
       take: 100,
     })

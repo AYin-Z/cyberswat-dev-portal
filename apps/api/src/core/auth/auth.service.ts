@@ -50,7 +50,12 @@ export class AuthService {
   ) {}
 
   /** 注册：必须携带邀请令牌（角色来自邀请，成员生命周期入口） */
-  async register(email: string, password: string, nickname: string, inviteToken: string): Promise<LoginResult> {
+  async register(
+    email: string,
+    password: string,
+    nickname: string,
+    inviteToken: string,
+  ): Promise<LoginResult> {
     email = email.trim().toLowerCase()
     this.throttle.check(`reg:${email}`)
     if (await this.users.findByEmail(email)) {
@@ -111,7 +116,14 @@ export class AuthService {
   }
 
   /** GitHub OAuth 回调：按 githubId 登录或创建账号（绑定邮箱） */
-  async githubLogin(githubId: string, github: string, email: string | null, nickname: string, avatarUrl?: string, token?: string): Promise<LoginResult> {
+  async githubLogin(
+    githubId: string,
+    github: string,
+    email: string | null,
+    _nickname: string,
+    avatarUrl?: string,
+    _token?: string,
+  ): Promise<LoginResult> {
     let user = await this.users.findByGithubId(githubId)
     if (!user && email) {
       // 已用邮箱注册过 → 绑定 GitHub
@@ -128,14 +140,21 @@ export class AuthService {
     if (!user) {
       // 🔴-2 修复：关闭自动建号（邀请制是成员边界）。GitHub 仅用于已有账号的绑定/快捷登录。
       // 未绑定 → 抛出，前端提示联系部长获取邀请链接；绑定由登录后"资料页绑定 GitHub"完成
-      throw new UnauthorizedException('该 GitHub 账号未绑定任何成员账号，请联系部长获取邀请链接后注册')
+      throw new UnauthorizedException(
+        '该 GitHub 账号未绑定任何成员账号，请联系部长获取邀请链接后注册',
+      )
     }
     this.events.emit('user.created', { userId: user.id })
     return this.issue(user.id, user.role, user.nickname)
   }
 
   /** 签发 access + refresh（refresh 落库，可记录轮换链） */
-  private async issue(id: string, role: AuthUser['role'], nickname: string, replacedBy?: string): Promise<LoginResult> {
+  private async issue(
+    id: string,
+    role: AuthUser['role'],
+    nickname: string,
+    replacedBy?: string,
+  ): Promise<LoginResult> {
     const payload = { sub: id, role, nickname, aud: 'web' }
     const accessToken = this.jwt.sign(payload, { expiresIn: '15m' })
 

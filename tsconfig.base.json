@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    // 各包公共的严格策略（三包配置的并集，不放宽）。
+    "target": "ES2023",
+    "strict": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true
+  }
+}

@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { api } from '../../lib/api'
 import StatusBadge from '../../components/StatusBadge.vue'
-import { NTag, NSpin, NButton, NProgress, NModal, NInput, NForm, NFormItem, useMessage } from 'naive-ui'
+import { NSpin, NButton, NProgress, NModal, NInput, NForm, NFormItem, useMessage } from 'naive-ui'
 
 interface TaskItem {
   id: string
@@ -21,6 +21,7 @@ interface TaskItem {
 const auth = useAuthStore()
 const route = useRoute()
 const message = useMessage()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 项目详情来自未类型化的 API 响应，模板仅做只读展示
 const project = ref<any>(null)
 const error = ref('')
 const loading = ref(true)
@@ -67,7 +68,10 @@ async function confirmSubmitNote() {
   }
   submittingNote.value = true
   try {
-    await api(`/api/tasks/${t.id}/submit`, { method: 'POST', body: JSON.stringify({ note: submitNoteText.value.trim() }) })
+    await api(`/api/tasks/${t.id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ note: submitNoteText.value.trim() }),
+    })
     message.success('已提交验收')
     showSubmitNote.value = false
     submitNoteTask.value = null
@@ -105,8 +109,14 @@ onMounted(load)
       <p class="desc">{{ project.description }}</p>
 
       <div class="meta-row">
-        <span>负责人：<b>{{ project.lead.nickname }}</b></span>
-        <span v-if="project.repoUrl">仓库：<a :href="project.repoUrl" target="_blank" class="repo">{{ project.repoUrl }}</a></span>
+        <span
+          >负责人：<b>{{ project.lead.nickname }}</b></span
+        >
+        <span v-if="project.repoUrl"
+          >仓库：<a :href="project.repoUrl" target="_blank" class="repo">{{
+            project.repoUrl
+          }}</a></span
+        >
         <span v-if="project.difficulty">难度：{{ project.difficulty }}</span>
       </div>
 
@@ -114,7 +124,9 @@ onMounted(load)
         <span class="p-label tnum">进度 {{ project.doneTaskCount }}/{{ project.taskCount }}</span>
         <n-progress
           type="line"
-          :percentage="project.taskCount ? Math.round((project.doneTaskCount / project.taskCount) * 100) : 0"
+          :percentage="
+            project.taskCount ? Math.round((project.doneTaskCount / project.taskCount) * 100) : 0
+          "
           :height="4"
           :show-indicator="false"
           class="progress"
@@ -143,11 +155,29 @@ onMounted(load)
             <template v-if="t.submitNote">· 📎 {{ t.submitNote }}</template>
           </p>
           <div class="t-actions">
-            <n-button v-if="t.status === 'TODO'" size="tiny" type="primary" quaternary @click="claim(t)">认领</n-button>
-            <n-button v-if="t.status === 'IN_PROGRESS'" size="tiny" type="primary" quaternary @click="openSubmitNote(t)">提交验收</n-button>
+            <n-button
+              v-if="t.status === 'TODO'"
+              size="tiny"
+              type="primary"
+              quaternary
+              @click="claim(t)"
+              >认领</n-button
+            >
+            <n-button
+              v-if="t.status === 'IN_PROGRESS'"
+              size="tiny"
+              type="primary"
+              quaternary
+              @click="openSubmitNote(t)"
+              >提交验收</n-button
+            >
             <template v-if="t.status === 'REVIEW' && auth.user?.id === t.creator.id">
-              <n-button size="tiny" type="success" quaternary @click="review(t, true)">通过</n-button>
-              <n-button size="tiny" type="error" quaternary @click="review(t, false)">驳回</n-button>
+              <n-button size="tiny" type="success" quaternary @click="review(t, true)"
+                >通过</n-button
+              >
+              <n-button size="tiny" type="error" quaternary @click="review(t, false)"
+                >驳回</n-button
+              >
             </template>
           </div>
         </div>
@@ -155,7 +185,12 @@ onMounted(load)
     </template>
 
     <!-- 🟡-4：提交说明弹窗 -->
-    <n-modal v-model:show="showSubmitNote" preset="card" title="提交验收" style="width: 480px; max-width: calc(100vw - 32px)">
+    <n-modal
+      v-model:show="showSubmitNote"
+      preset="card"
+      title="提交验收"
+      style="width: 480px; max-width: calc(100vw - 32px)"
+    >
       <n-form label-placement="top">
         <n-form-item label="提交说明">
           <n-input
@@ -167,7 +202,9 @@ onMounted(load)
             show-count
           />
         </n-form-item>
-        <n-button type="primary" block :loading="submittingNote" @click="confirmSubmitNote">提交</n-button>
+        <n-button type="primary" block :loading="submittingNote" @click="confirmSubmitNote"
+          >提交</n-button
+        >
       </n-form>
     </n-modal>
   </section>

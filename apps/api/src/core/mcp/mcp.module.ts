@@ -1,4 +1,4 @@
-import { Global, Injectable, Logger, Module, OnApplicationBootstrap } from '@nestjs/common'
+import { Global, Logger, Module, OnApplicationBootstrap } from '@nestjs/common'
 import express, { type Express, type Request, type Response } from 'express'
 import cookieParser from 'cookie-parser'
 import { StreamableHTTPServerTransport } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/streamableHttp.js'
@@ -58,7 +58,11 @@ export class McpModule implements OnApplicationBootstrap {
       '/mcp',
       requireBearerAuth({ verifier: this.provider }),
       (req: Request, _res: Response, next: () => void) => {
-        const auth = (req as Request & { auth?: { scopes?: string[]; clientId?: string; extra?: Record<string, unknown> } }).auth
+        const auth = (
+          req as Request & {
+            auth?: { scopes?: string[]; clientId?: string; extra?: Record<string, unknown> }
+          }
+        ).auth
         if (!auth) {
           console.log('[mcp] wrapper: req.auth 为空')
           next()
@@ -76,27 +80,31 @@ export class McpModule implements OnApplicationBootstrap {
     )
     app.post('/mcp', async (req: Request, res: Response) => {
       try {
-      const sessionId = (req.headers['mcp-session-id'] as string) ?? randomUUID()
-      let transport = this.sessions.get(sessionId)
-      if (this.sessions.size >= McpModule.MAX_SESSIONS) {
-        res.status(429).json({ error: 'too_many_sessions', error_description: '会话数已达上限，请稍后再试' })
-        return
-      }
-      if (!transport) {
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => sessionId,
-          enableJsonResponse: true,
-        })
-        this.sessions.set(sessionId, transport)
-        transport.onclose = () => this.sessions.delete(sessionId)
-        // 每会话独立 Server 实例（SDK 限制）
-        const server = this.bridge.createServer()
-        await server.connect(transport)
-        this.logger.log(`[mcp] 新会话 ${sessionId.slice(0, 8)}`)
-      }
-      await transport.handleRequest(req, res, req.body)
+        const sessionId = (req.headers['mcp-session-id'] as string) ?? randomUUID()
+        let transport = this.sessions.get(sessionId)
+        if (this.sessions.size >= McpModule.MAX_SESSIONS) {
+          res
+            .status(429)
+            .json({ error: 'too_many_sessions', error_description: '会话数已达上限，请稍后再试' })
+          return
+        }
+        if (!transport) {
+          transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => sessionId,
+            enableJsonResponse: true,
+          })
+          this.sessions.set(sessionId, transport)
+          transport.onclose = () => this.sessions.delete(sessionId)
+          // 每会话独立 Server 实例（SDK 限制）
+          const server = this.bridge.createServer()
+          await server.connect(transport)
+          this.logger.log(`[mcp] 新会话 ${sessionId.slice(0, 8)}`)
+        }
+        await transport.handleRequest(req, res, req.body)
       } catch (e) {
-        this.logger.error(`[mcp] 处理失败: ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`)
+        this.logger.error(
+          `[mcp] 处理失败: ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`,
+        )
         if (!res.headersSent) res.status(500).json({ error: 'server_error' })
       }
     })

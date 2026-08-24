@@ -41,7 +41,9 @@ describe('lib/api.ts', () => {
   it('成功请求：自动带 Authorization，返回解析后的 JSON', async () => {
     const auth = useAuthStore()
     auth.setTokens('access-1', 'refresh-1')
-    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse({ hello: 'world' }))
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      jsonResponse({ hello: 'world' }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const data = await api<{ hello: string }>('/api/tasks')
@@ -67,7 +69,7 @@ describe('lib/api.ts', () => {
     const auth = useAuthStore()
     auth.setTokens('old-access', 'old-refresh')
     let fooCalls = 0
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
       if (String(url).includes('/api/auth/refresh')) {
         return jsonResponse({ accessToken: 'new-access', refreshToken: 'new-refresh' })
       }
@@ -102,7 +104,10 @@ describe('lib/api.ts', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const [a, b] = await Promise.all([api<{ data: string }>('/api/foo'), api<{ data: string }>('/api/foo')])
+    const [a, b] = await Promise.all([
+      api<{ data: string }>('/api/foo'),
+      api<{ data: string }>('/api/foo'),
+    ])
 
     expect(refreshCount).toBe(1)
     expect(a.data).toBe('ok')
@@ -114,7 +119,8 @@ describe('lib/api.ts', () => {
     auth.setTokens('old-access', 'old-refresh')
     const getHref = trapLocationHref()
     const fetchMock = vi.fn(async (url: string) => {
-      if (String(url).includes('/api/auth/refresh')) return jsonResponse({ message: 'invalid refresh' }, 401)
+      if (String(url).includes('/api/auth/refresh'))
+        return jsonResponse({ message: 'invalid refresh' }, 401)
       return jsonResponse({ message: 'Unauthorized' }, 401)
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -147,10 +153,7 @@ describe('lib/api.ts', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
-        jsonResponse(
-          { message: ['标题不能为空', '正文不能为空'], fields: { title: '必填' } },
-          400,
-        ),
+        jsonResponse({ message: ['标题不能为空', '正文不能为空'], fields: { title: '必填' } }, 400),
       ),
     )
 
@@ -164,14 +167,20 @@ describe('lib/api.ts', () => {
   it('错误提取：非 JSON 响应回退为状态码文案', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (_url: string, _init?: RequestInit) => new Response('Internal Server Error', { status: 500 })),
+      vi.fn(
+        async (_url: string, _init?: RequestInit) =>
+          new Response('Internal Server Error', { status: 500 }),
+      ),
     )
     const err = (await api('/api/foo').catch((e) => e)) as ApiError
     expect(err.message).toBe('请求失败 (500)')
   })
 
   it('204 无内容：返回 undefined', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 204 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, _init?: RequestInit) => new Response(null, { status: 204 })),
+    )
     const out = await api('/api/foo')
     expect(out).toBeUndefined()
   })

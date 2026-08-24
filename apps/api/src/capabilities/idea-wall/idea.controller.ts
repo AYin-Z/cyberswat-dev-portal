@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common'
 import { IdeaService, type IdeaView } from './idea.service'
 import { Authorize, CurrentUser, type AuthUser } from '../../core/permissions/permission.decorator'
-import { IsArray, IsEnum, IsOptional, IsString, MinLength } from 'class-validator'
+import { IsArray, IsOptional, IsString, MinLength } from 'class-validator'
 import { IdeaStatus } from '@prisma/client'
 
 class CreateIdeaDto {
@@ -57,7 +57,11 @@ export class IdeaController {
   /** 转正/归档（部长） */
   @Authorize('idea.promote')
   @Post(':id/status')
-  setStatus(@Param('id') id: string, @Body('status') status: IdeaStatus, @CurrentUser() user: AuthUser): Promise<IdeaView> {
+  setStatus(
+    @Param('id') id: string,
+    @Body('status') status: IdeaStatus,
+    @CurrentUser() user: AuthUser,
+  ): Promise<IdeaView> {
     return this.service.setStatus(id, status, user.id)
   }
 }

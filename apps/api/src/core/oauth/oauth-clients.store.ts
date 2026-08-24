@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { createHash, randomBytes } from 'node:crypto'
 import { PrismaService } from '../db/prisma.service'
 import type { OAuthClientInformationFull } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/shared/auth.js'
@@ -25,7 +25,9 @@ export class OAuthClientsStore implements OAuthRegisteredClientsStore {
       client_id: c.id,
       client_secret: undefined,
       client_id_issued_at: Math.floor(c.issuedAt.getTime() / 1000),
-      client_secret_expires_at: c.secretExpiresAt ? Math.floor(c.secretExpiresAt.getTime() / 1000) : 0,
+      client_secret_expires_at: c.secretExpiresAt
+        ? Math.floor(c.secretExpiresAt.getTime() / 1000)
+        : 0,
       redirect_uris: c.redirectUris,
       grant_types: c.grantTypes,
       response_types: c.responseTypes,
@@ -50,7 +52,9 @@ export class OAuthClientsStore implements OAuthRegisteredClientsStore {
         responseTypes: client.response_types ?? ['code'],
         scope: client.scope ?? '',
         clientName: client.client_name ?? null,
-        secretExpiresAt: client.client_secret_expires_at ? new Date(client.client_secret_expires_at * 1000) : null,
+        secretExpiresAt: client.client_secret_expires_at
+          ? new Date(client.client_secret_expires_at * 1000)
+          : null,
       },
     })
     this.logger.log(`[oauth] DCR 注册客户端 ${clientId}`)

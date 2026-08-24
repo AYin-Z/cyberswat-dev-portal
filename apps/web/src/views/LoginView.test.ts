@@ -21,7 +21,10 @@ function makeRouter(): Router {
 }
 
 function jsonOk(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 describe('LoginView.vue', () => {
@@ -42,7 +45,7 @@ describe('LoginView.vue', () => {
 
     await router.push('/login')
     await router.isReady()
-    const w = mount(LoginView, { global: { plugins: [router] } })
+    mount(LoginView, { global: { plugins: [router] } })
     await flushPromises()
 
     const auth = useAuthStore()
@@ -54,7 +57,10 @@ describe('LoginView.vue', () => {
 
   it('GitHub 回调：/me 失败 → 显示错误提示且不跳转', async () => {
     window.location.hash = '#token=gh-bad'
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 401 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 401 })),
+    )
 
     await router.push('/login')
     await router.isReady()
@@ -138,7 +144,10 @@ describe('LoginView.vue', () => {
   })
 
   it('表单登录：失败 → 显示「邮箱或密码错误」', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 401 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 401 })),
+    )
     await router.push('/login')
     await router.isReady()
     const w = mount(LoginView, { global: { plugins: [router] } })

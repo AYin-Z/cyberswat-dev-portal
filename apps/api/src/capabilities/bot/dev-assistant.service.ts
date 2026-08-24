@@ -45,7 +45,8 @@ export class DevAssistantBot {
       data: {
         name: BOT_NAME,
         displayName: '开发部助理',
-        persona: '你是 CyberSWAT 开发部助理。回答要简洁、只基于工具返回的真实数据，不编造。写操作必须走审批。',
+        persona:
+          '你是 CyberSWAT 开发部助理。回答要简洁、只基于工具返回的真实数据，不编造。写操作必须走审批。',
         identity: BOT_IDENTITY,
         userId: user.id,
         tools: [], // 空 = 继承 member 级可见工具
@@ -57,7 +58,12 @@ export class DevAssistantBot {
 
   /** 订阅评论/帖子创建：检测 @dev-assistant → 回复 */
   @OnEvent('bot.mention')
-  async onMention(payload: { content: string; postId: string; byUserId: string; commentId?: string }) {
+  async onMention(payload: {
+    content: string
+    postId: string
+    byUserId: string
+    commentId?: string
+  }) {
     // 🟢-15：确保 bot 用户已初始化（幂等）
     await this.ensure()
     const agent = await this.prisma.coreAgent.findUnique({ where: { name: BOT_NAME } })
@@ -70,7 +76,12 @@ export class DevAssistantBot {
     // 去掉触发词，取询问内容
     const question = text.replace(mentionRe, '').trim()
     if (!question) {
-      await this.reply(payload.postId, '在的！@我 可以问：最近公告 / 招募中的点子 / 任务进展 / 社区帖子', payload.commentId, payload.byUserId)
+      await this.reply(
+        payload.postId,
+        '在的！@我 可以问：最近公告 / 招募中的点子 / 任务进展 / 社区帖子',
+        payload.commentId,
+        payload.byUserId,
+      )
       return
     }
 
@@ -79,28 +90,44 @@ export class DevAssistantBot {
   }
 
   /** 回答：关键词 → 工具调用 → 摘要（模板引擎） */
-  private async answer(question: string, byUserId: string): Promise<string> {
+  private async answer(question: string, _byUserId: string): Promise<string> {
     const ctx: ToolCallContext = { caller: BOT_IDENTITY, role: 'member', agentId: BOT_IDENTITY }
     const q = question.toLowerCase()
 
     try {
       if (/公告|通知/.test(q)) {
-        const r = await this.tools.call('announcement.list', { limit: 5 }, ctx) as { title: string; important?: boolean; publishedAt?: string | null }[]
+        const r = (await this.tools.call('announcement.list', { limit: 5 }, ctx)) as {
+          title: string
+          important?: boolean
+          publishedAt?: string | null
+        }[]
         if (!r.length) return '目前没有公告。'
-        return '最近公告：\n' + r.map((a) => `• ${a.title}${a.important ? '（重要）' : ''}`).join('\n')
+        return (
+          '最近公告：\n' + r.map((a) => `• ${a.title}${a.important ? '（重要）' : ''}`).join('\n')
+        )
       }
       if (/点子|招募/.test(q)) {
-        const r = await this.tools.call('idea.search', { status: 'RECRUITING', limit: 5 }, ctx) as { title: string; need: string }[]
+        const r = (await this.tools.call(
+          'idea.search',
+          { status: 'RECRUITING', limit: 5 },
+          ctx,
+        )) as { title: string; need: string }[]
         if (!r.length) return '目前没有招募中的点子。'
         return '招募中的点子：\n' + r.map((i) => `• ${i.title} — ${i.need}`).join('\n')
       }
       if (/任务|进展/.test(q)) {
-        const r = await this.tools.call('task.list', { limit: 5 }, ctx) as { title: string; status: string }[]
+        const r = (await this.tools.call('task.list', { limit: 5 }, ctx)) as {
+          title: string
+          status: string
+        }[]
         if (!r.length) return '目前没有任务。'
         return '最近任务：\n' + r.map((t) => `• ${t.title}（${t.status}）`).join('\n')
       }
       if (/帖子|社区/.test(q)) {
-        const r = await this.tools.call('post.search', { limit: 5 }, ctx) as { title: string; board: string }[]
+        const r = (await this.tools.call('post.search', { limit: 5 }, ctx)) as {
+          title: string
+          board: string
+        }[]
         if (!r.length) return '社区还没有帖子。'
         return '社区最近：\n' + r.map((p) => `• [${p.board}] ${p.title}`).join('\n')
       }
@@ -112,7 +139,12 @@ export class DevAssistantBot {
   }
 
   /** 以 bot 身份回复（🟡-11：authorViaAgent 结构化标识；🟡-10：通知发起人） */
-  private async reply(postId: string, content: string, replyToCommentId?: string, byUserId?: string) {
+  private async reply(
+    postId: string,
+    content: string,
+    _replyToCommentId?: string,
+    byUserId?: string,
+  ) {
     const agent = await this.prisma.coreAgent.findUnique({ where: { name: BOT_NAME } })
     if (!agent?.userId) return
     const comment = await this.prisma.postComment.create({

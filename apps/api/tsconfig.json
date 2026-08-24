@@ -1,31 +1,20 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES2023",
     "declaration": false,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
-    "skipLibCheck": true,
-    "strict": true,
     "strictPropertyInitialization": false,
-    "noImplicitAny": true,
-    "forceConsistentCasingInFileNames": true,
     "paths": {
-      "@cyberswat/shared": [
-        "../../packages/shared/src/index.ts"
-      ]
+      "@cyberswat/shared": ["../../packages/shared/src/index.ts"]
     }
   },
-  "include": [
-    "src/**/*",
-    "prisma/**/*"
-  ]
+  "include": ["src/**/*", "prisma/**/*"]
 }

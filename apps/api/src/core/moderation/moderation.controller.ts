@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common'
 import { ModerationService, type TargetType } from './moderation.service'
 import { Authorize, CurrentUser, type AuthUser } from '../permissions/permission.decorator'
-import { IsEnum, IsString, MaxLength } from 'class-validator'
+import { IsString, MaxLength } from 'class-validator'
 
 class ReportDto {
   @IsString() @MaxLength(200) reason!: string

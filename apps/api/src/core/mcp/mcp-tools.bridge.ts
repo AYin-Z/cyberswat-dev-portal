@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../db/prisma.service'
 import { Server as McpServer } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/server/index.js'
-import { ListToolsRequestSchema, CallToolRequestSchema } from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/types.js'
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+} from '../../../node_modules/@modelcontextprotocol/sdk/dist/cjs/types.js'
 import { ToolRegistry, type ToolCallContext } from '../tools/tool.registry'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
@@ -12,7 +15,8 @@ const WINDOW_MS = 3600_000
 
 /** 写类工具判定 */
 const isWriteTool = (id: string, requiresApproval?: boolean) =>
-  requiresApproval === true || /(create|publish|assign|invite|join|submit|review|confirm|revoke|update|delete)/.test(id)
+  requiresApproval === true ||
+  /(create|publish|assign|invite|join|submit|review|confirm|revoke|update|delete)/.test(id)
 
 export interface McpAuth {
   userId: string
@@ -34,7 +38,6 @@ export const McpContext = {
 @Injectable()
 export class McpToolsBridge {
   private readonly logger = new Logger(McpToolsBridge.name)
-  private server: McpServer | null = null
 
   /** 限额计数：key = userId:r|w，value = 时间戳数组 */
   private readonly rateMap = new Map<string, number[]>()
@@ -50,20 +53,23 @@ export class McpToolsBridge {
       { name: 'cyberswat-dev-portal', version: '0.2.0' },
       { capabilities: { tools: {} } },
     )
-    this.server = server
 
     server.setRequestHandler(ListToolsRequestSchema, async () => {
       const auth = McpContext.get()
       if (!auth) return { tools: [] }
       const defs = this.tools.listAll()
-      const visible = defs.filter((d) => !d.requiredPermission || auth.scopes.includes(d.requiredPermission))
+      const visible = defs.filter(
+        (d) => !d.requiredPermission || auth.scopes.includes(d.requiredPermission),
+      )
       return {
         tools: visible.map((d) => ({
           name: d.id.replace(/[^a-zA-Z0-9_-]/g, '_'),
           description: `${d.description}${d.requiresApproval ? '（需要审批）' : ''}`,
           inputSchema: {
             type: 'object',
-            properties: Object.fromEntries(Object.entries(d.params).map(([k, v]) => [k, v as Record<string, unknown>])),
+            properties: Object.fromEntries(
+              Object.entries(d.params).map(([k, v]) => [k, v as Record<string, unknown>]),
+            ),
           },
         })),
       }
@@ -79,7 +85,9 @@ export class McpToolsBridge {
 
       // scope 校验（权限点级）
       if (def.requiredPermission && !auth.scopes.includes(def.requiredPermission)) {
-        throw new Error(`缺少权限点 ${def.requiredPermission}（当前 scope: ${auth.scopes.join(',') || '无'}）`)
+        throw new Error(
+          `缺少权限点 ${def.requiredPermission}（当前 scope: ${auth.scopes.join(',') || '无'}）`,
+        )
       }
 
       // 双限额
@@ -91,11 +99,19 @@ export class McpToolsBridge {
         where: { id: auth.userId },
         select: { role: true },
       })
-      const ownerRole = (owner?.role.toLowerCase() ?? 'member') as 'guest' | 'member' | 'dept-leader' | 'admin'
+      const ownerRole = (owner?.role.toLowerCase() ?? 'member') as
+        'guest' | 'member' | 'dept-leader' | 'admin'
       const ctx: ToolCallContext = { caller: auth.userId, role: ownerRole, agentId: auth.clientId }
-      const result = await this.tools.call(def.id, request.params.arguments ?? {}, ctx, { skipRoleCheck: true })
+      const result = await this.tools.call(def.id, request.params.arguments ?? {}, ctx, {
+        skipRoleCheck: true,
+      })
       return {
-        content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result, null, 2) }],
+        content: [
+          {
+            type: 'text',
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+          },
+        ],
         isError: false,
       }
     })
@@ -111,7 +127,9 @@ export class McpToolsBridge {
     const limit = write ? WRITE_LIMIT : READ_LIMIT
     if (arr.length >= limit) {
       throw new Error(
-        write ? '写操作频率超限（5 次/时），请稍后再试或联系部长' : '读取频率超限（30 次/时），请稍后再试',
+        write
+          ? '写操作频率超限（5 次/时），请稍后再试或联系部长'
+          : '读取频率超限（30 次/时），请稍后再试',
       )
     }
     arr.push(now)

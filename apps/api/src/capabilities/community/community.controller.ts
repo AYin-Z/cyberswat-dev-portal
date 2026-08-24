@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common'
 import { CommunityService } from './community.service'
 import { Authorize, CurrentUser, type AuthUser } from '../../core/permissions/permission.decorator'
-import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator'
+import { IsEnum, IsString, MinLength } from 'class-validator'
 import { PostBoard } from '@prisma/client'
 
 class CreatePostDto {
