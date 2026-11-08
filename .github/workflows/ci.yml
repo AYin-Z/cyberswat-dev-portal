@@ -40,6 +40,12 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Generate schema-specific Prisma types before typecheck on a clean runner.
+      - name: Generate Prisma client
+        run: pnpm --filter @cyberswat/dev-api prisma:generate
+        env:
+          DATABASE_URL: postgresql://cyberswat:cyberswat@localhost:5432/cyberswat_test?schema=public
+
       - name: Lint
         run: pnpm lint
 
