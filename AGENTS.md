@@ -58,7 +58,7 @@ dev.cyberswat.cn → CF Tunnel(2615b5fa, 远程配置) → localhost:8092 → cy
   1. CF API PUT tunnel configurations 插入 `dev.cyberswat.cn → http://localhost:8092`（在 catch-all 前）
   2. DNS CNAME：dev → 2615b5fa-3500-4921-97ba-19d602660cda.cfargotunnel.com（proxied）
   3. 验证 https://dev.cyberswat.cn + /api/health
-- 生产测试账号：leader@cyberswat.cn / member@cyberswat.cn（密码 password123）
+- 凭据安全：禁止在仓库文档、提交信息及输出中记录生产测试账号的登录凭据。历史公开凭据按已泄露处理，由管理员核查并在批准范围内停用或重置、撤销会话及审查审计；文档移除不代表凭据已失效，也不会清除 Git 历史。
 
 ## 已知坑（本仓库特有）
 
