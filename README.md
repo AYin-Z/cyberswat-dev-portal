@@ -84,12 +84,13 @@ docker rm -f cyberswat-dev-api && docker run -d --name cyberswat-dev-api \
   cyberswat-dev-api:latest sh -c "npx prisma migrate deploy && node dist/main.js"
 ```
 
-⚠️ 生产环境变量：JWT_SECRET / DB 密码仍是 dev 值，正式对外前必须更换。
+⚠️ 生产环境变量必须通过仓库外的受限配置注入。历史记录中的 JWT / 数据库密码轮换不代表用户登录密码已轮换；当前有效性须由管理员独立核验。
 
-## 测试账号（生产库）
+## 测试与凭据安全
 
-- 部长：`leader@cyberswat.cn` / `password123`（dept-leader）
-- 成员：`member@cyberswat.cn` / `password123`（member）
+- 不在公开文档中记录账号、密码、令牌或其他可用于登录的凭据。测试应使用隔离环境及按需创建的专用账号，禁止复用生产凭据。
+- 历史公开凭据应按已泄露处理：由管理员核查对应账号，按确认的处置范围停用或重置密码并撤销相关会话，再检查审计记录。
+- 删除当前文档中的凭据不会清除 Git 历史、已有副本或缓存，也不代表凭据已失效；失效处置须独立完成和验证。
 
 ## 里程碑
 
